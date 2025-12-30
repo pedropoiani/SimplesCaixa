@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PDV-MF
+Comment=Sistema de Controle de Caixa
+Exec=/home/pedro/Downloads/pdvMF/pdv.sh
+Icon=applications-office
+Terminal=false
+Categories=Office;Finance;
+StartupNotify=true
