@@ -176,7 +176,7 @@ class GitHubSync:
         conteudo = json.dumps(dados, indent=2, ensure_ascii=False, default=str)
         mensagem = f"Atualiza movimentações - {datetime.now().strftime('%d/%m/%Y %H:%M')}"
         
-        return self._enviar_arquivo('docs/movimentacoes.json', conteudo, mensagem)
+        return self._enviar_arquivo('docs/d8f3a2b9c1e7.json', conteudo, mensagem)
     
     def testar_conexao(self) -> tuple:
         """

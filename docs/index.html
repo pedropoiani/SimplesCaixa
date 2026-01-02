@@ -406,7 +406,8 @@
     
     <script>
         // ========== AUTENTICAÇÃO ==========
-        // A senha é definida no arquivo movimentacoes.json pelo sistema
+        // A senha é definida no arquivo de dados pelo sistema
+        const DATA_FILE = 'd8f3a2b9c1e7.json';
         let senhaCorreta = '';
         let todasMovimentacoes = [];
         let periodoAtual = 'hoje';
@@ -421,7 +422,7 @@
             
             try {
                 // Buscar senha do JSON
-                const response = await fetch('movimentacoes.json?' + Date.now());
+                const response = await fetch(DATA_FILE + '?' + Date.now());
                 const dados = await response.json();
                 senhaCorreta = dados.senha || '';
                 
@@ -594,7 +595,7 @@
             btn.classList.add('girando');
             
             try {
-                const response = await fetch('movimentacoes.json?' + Date.now());
+                const response = await fetch(DATA_FILE + '?' + Date.now());
                 
                 if (!response.ok) {
                     throw new Error('Arquivo não encontrado');
