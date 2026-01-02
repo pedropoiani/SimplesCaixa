@@ -1,4 +1,25 @@
 {
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "docs/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/docs/$1"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -12,16 +33,12 @@
           "value": "nosniff"
         },
         {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
         },
         {
           "key": "Cache-Control",
-          "value": "no-store, no-cache, must-revalidate, proxy-revalidate"
+          "value": "no-store, no-cache, must-revalidate"
         }
       ]
     },
@@ -29,16 +46,10 @@
       "source": "/d8f3a2b9c1e7.json",
       "headers": [
         {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0"
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
         }
       ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/index.html"
     }
   ]
 }

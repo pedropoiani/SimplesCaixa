@@ -405,40 +405,63 @@
     </button>
     
     <script>
-        // ========== AUTENTICAÇÃO ==========
-        // A senha é definida no arquivo de dados pelo sistema
-        const DATA_FILE = 'd8f3a2b9c1e7.json';
-        let senhaCorreta = '';
+        // ========== AUTENTICAÇÃO SEGURA ==========
+        // A senha é validada no servidor (Serverless Function)
+        const API_URL = '/api/dados';
+        let senhaAtual = '';
         let todasMovimentacoes = [];
         let periodoAtual = 'hoje';
         
         // Verificar se já está logado (sessão)
         const verificarSessao = () => {
-            return sessionStorage.getItem('pdvmf_autenticado') === 'true';
+            return sessionStorage.getItem('pdvmf_autenticado') === 'true' && 
+                   sessionStorage.getItem('pdvmf_senha');
+        };
+        
+        const getSenhaArmazenada = () => {
+            return sessionStorage.getItem('pdvmf_senha') || '';
         };
         
         const verificarSenha = async () => {
             const senhaDigitada = document.getElementById('senhaInput').value;
             
+            if (!senhaDigitada) {
+                document.getElementById('loginErro').style.display = 'block';
+                return;
+            }
+            
             try {
-                // Buscar senha do JSON
-                const response = await fetch(DATA_FILE + '?' + Date.now());
-                const dados = await response.json();
-                senhaCorreta = dados.senha || '';
+                document.getElementById('loginErro').style.display = 'none';
                 
-                if (senhaDigitada === senhaCorreta) {
+                // Validar senha no servidor
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha: senhaDigitada })
+                });
+                
+                if (response.ok) {
+                    // Senha correta
+                    senhaAtual = senhaDigitada;
                     sessionStorage.setItem('pdvmf_autenticado', 'true');
+                    sessionStorage.setItem('pdvmf_senha', senhaDigitada);
+                    
+                    const dados = await response.json();
+                    todasMovimentacoes = dados.movimentacoes || [];
+                    
                     document.getElementById('loginContainer').classList.add('hidden');
                     document.getElementById('conteudoPrincipal').classList.remove('hidden');
                     document.getElementById('btnAtualizar').classList.remove('hidden');
-                    carregarDados();
+                    
+                    atualizarInterface(dados);
                 } else {
                     document.getElementById('loginErro').style.display = 'block';
                     document.getElementById('senhaInput').value = '';
                     document.getElementById('senhaInput').focus();
                 }
             } catch (error) {
-                alert('Erro ao verificar senha. Tente novamente.');
+                console.error('Erro:', error);
+                alert('Erro ao conectar. Tente novamente.');
             }
         };
         
@@ -590,31 +613,64 @@
             container.innerHTML = html;
         };
         
+        const atualizarInterface = (dados) => {
+            todasMovimentacoes = dados.movimentacoes || [];
+            
+            // Atualizar última atualização
+            const atualizacao = new Date(dados.atualizadoEm);
+            document.getElementById('ultimaAtualizacao').textContent = 
+                `Atualizado: ${atualizacao.toLocaleString('pt-BR')}`;
+            
+            // Calcular saldo do dia (sempre do dia atual)
+            const { saldo, quantidade, porFormaPagamento } = calcularSaldoDia(todasMovimentacoes);
+            document.getElementById('saldoDia').textContent = formatarMoeda(saldo);
+            document.getElementById('qtdMovimentacoes').textContent = quantidade;
+            
+            // Resumo por forma de pagamento
+            renderizarResumoFormas(porFormaPagamento);
+            
+            // Atualizar tudo conforme filtro atual
+            atualizarTotaisELista();
+        };
+        
         const carregarDados = async () => {
             const btn = document.getElementById('btnAtualizar');
             btn.classList.add('girando');
             
             try {
-                const response = await fetch(DATA_FILE + '?' + Date.now());
+                const senha = getSenhaArmazenada();
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ senha })
+                });
                 
                 if (!response.ok) {
-                    throw new Error('Arquivo não encontrado');
+                    if (response.status === 401) {
+                        // Senha inválida - fazer logout
+                        sessionStorage.clear();
+                        location.reload();
+                        return;
+                    }
+                    throw new Error('Erro ao carregar dados');
                 }
                 
                 const dados = await response.json();
-                todasMovimentacoes = dados.movimentacoes || [];
+                atualizarInterface(dados);
                 
-                // Atualizar última atualização
-                const atualizacao = new Date(dados.atualizadoEm);
-                document.getElementById('ultimaAtualizacao').textContent = 
-                    `Atualizado: ${atualizacao.toLocaleString('pt-BR')}`;
-                
-                // Calcular saldo do dia (sempre do dia atual)
-                const { saldo, quantidade, porFormaPagamento } = calcularSaldoDia(todasMovimentacoes);
-                document.getElementById('saldoDia').textContent = formatarMoeda(saldo);
-                document.getElementById('qtdMovimentacoes').textContent = quantidade;
-                
-                // Resumo por forma de pagamento
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                document.getElementById('movimentacoes').innerHTML = `
+                    <div class="erro">
+                        ⚠️ Erro ao carregar dados<br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            } finally {
+                btn.classList.remove('girando');
+            }
+        };
                 renderizarResumoFormas(porFormaPagamento);
                 
                 // Atualizar tudo conforme filtro atual
@@ -660,11 +716,12 @@
             atualizarTotaisELista();
         };
         
-        // Carregar dados ao iniciar
-        carregarDados();
-        
-        // Atualizar a cada 2 minutos
-        setInterval(carregarDados, 120000);
+        // Atualizar a cada 2 minutos (se estiver logado)
+        setInterval(() => {
+            if (verificarSessao()) {
+                carregarDados();
+            }
+        }, 120000);
     </script>
 </body>
 </html>
