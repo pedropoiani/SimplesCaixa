@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDV-MF - Painel de Movimentações</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        header .ultima-atualizacao {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .card-saldo {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .card-saldo .titulo {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .card-saldo .valor {
+            font-size: 42px;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        
+        .card-saldo .info {
+            font-size: 14px;
+            color: #888;
+        }
+        
+        .card-saldo .info span {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .resumo-formas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+        
+        .forma-pagamento {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #555;
+        }
+        
+        .forma-pagamento strong {
+            color: #28a745;
+        }
+        
+        .secao-titulo {
+            color: white;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .movimentacoes {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .card-movimentacao {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-movimentacao.entrada {
+            border-left: 4px solid #28a745;
+        }
+        
+        .card-movimentacao.saida {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .mov-info {
+            flex: 1;
+        }
+        
+        .mov-categoria {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .mov-detalhes {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .mov-valor {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .mov-valor.entrada {
+            color: #28a745;
+        }
+        
+        .mov-valor.saida {
+            color: #dc3545;
+        }
+        
+        .separador-dia {
+            color: white;
+            font-size: 13px;
+            padding: 8px 0;
+            opacity: 0.9;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            margin-top: 10px;
+        }
+        
+        .vazio {
+            text-align: center;
+            color: white;
+            padding: 40px;
+            opacity: 0.8;
+        }
+        
+        .btn-atualizar {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: white;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s;
+        }
+        
+        .btn-atualizar:hover {
+            transform: scale(1.1);
+        }
+        
+        .btn-atualizar.girando {
+            animation: girar 1s linear infinite;
+        }
+        
+        @keyframes girar {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .erro {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .total-periodo {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        .total-periodo div {
+            text-align: center;
+        }
+        
+        .total-periodo .label {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        
+        .total-periodo .valor-entrada {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .total-periodo .valor-saida {
+            font-size: 18px;
+            font-weight: bold;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 PDV-MF</h1>
+            <div class="ultima-atualizacao" id="ultimaAtualizacao">Carregando...</div>
+        </header>
+        
+        <div class="card-saldo">
+            <div class="titulo">💰 Saldo do Dia</div>
+            <div class="valor" id="saldoDia">R$ 0,00</div>
+            <div class="info">
+                <span id="qtdMovimentacoes">0</span> movimentações hoje
+            </div>
+            <div class="resumo-formas" id="resumoFormas"></div>
+            <div class="total-periodo">
+                <div>
+                    <div class="label">Entradas (4 dias)</div>
+                    <div class="valor-entrada" id="totalEntradas">R$ 0,00</div>
+                </div>
+                <div>
+                    <div class="label">Saídas (4 dias)</div>
+                    <div class="valor-saida" id="totalSaidas">R$ 0,00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="secao-titulo">📋 Movimentações (últimos 4 dias)</div>
+        
+        <div class="movimentacoes" id="movimentacoes">
+            <div class="vazio">Carregando movimentações...</div>
+        </div>
+    </div>
+    
+    <button class="btn-atualizar" onclick="carregarDados()" id="btnAtualizar" title="Atualizar">
+        🔄
+    </button>
+    
+    <script>
+        const formatarMoeda = (valor) => {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor || 0);
+        };
+        
+        const formatarData = (dataStr) => {
+            const data = new Date(dataStr);
+            return data.toLocaleDateString('pt-BR');
+        };
+        
+        const formatarHora = (dataStr) => {
+            const data = new Date(dataStr);
+            return data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        };
+        
+        const agruparPorDia = (movimentacoes) => {
+            const grupos = {};
+            movimentacoes.forEach(mov => {
+                const dia = formatarData(mov.data_hora);
+                if (!grupos[dia]) {
+                    grupos[dia] = [];
+                }
+                grupos[dia].push(mov);
+            });
+            return grupos;
+        };
+        
+        const calcularSaldoDia = (movimentacoes) => {
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            let saldo = 0;
+            let quantidade = 0;
+            const porFormaPagamento = {};
+            
+            movimentacoes.forEach(mov => {
+                const diaMov = formatarData(mov.data_hora);
+                if (diaMov === hoje) {
+                    if (mov.tipo === 'Entrada') {
+                        saldo += mov.valor;
+                        // Agrupar por forma de pagamento
+                        const forma = mov.forma_pagamento_nome || 'Outros';
+                        porFormaPagamento[forma] = (porFormaPagamento[forma] || 0) + mov.valor;
+                    } else {
+                        saldo -= mov.valor;
+                    }
+                    quantidade++;
+                }
+            });
+            
+            return { saldo, quantidade, porFormaPagamento };
+        };
+        
+        const calcularTotaisPeriodo = (movimentacoes) => {
+            let entradas = 0;
+            let saidas = 0;
+            
+            movimentacoes.forEach(mov => {
+                if (mov.tipo === 'Entrada') {
+                    entradas += mov.valor;
+                } else {
+                    saidas += mov.valor;
+                }
+            });
+            
+            return { entradas, saidas };
+        };
+        
+        const renderizarMovimentacoes = (movimentacoes) => {
+            const container = document.getElementById('movimentacoes');
+            
+            if (!movimentacoes || movimentacoes.length === 0) {
+                container.innerHTML = '<div class="vazio">Nenhuma movimentação encontrada</div>';
+                return;
+            }
+            
+            const grupos = agruparPorDia(movimentacoes);
+            let html = '';
+            
+            Object.keys(grupos).forEach(dia => {
+                html += `<div class="separador-dia">📅 ${dia}</div>`;
+                
+                grupos[dia].forEach(mov => {
+                    const tipoClass = mov.tipo === 'Entrada' ? 'entrada' : 'saida';
+                    const sinal = mov.tipo === 'Entrada' ? '+' : '-';
+                    
+                    html += `
+                        <div class="card-movimentacao ${tipoClass}">
+                            <div class="mov-info">
+                                <div class="mov-categoria">${mov.categoria}</div>
+                                <div class="mov-detalhes">
+                                    ${formatarHora(mov.data_hora)} • ${mov.forma_pagamento_nome || mov.tipo}
+                                    ${mov.observacao ? ' • ' + mov.observacao : ''}
+                                </div>
+                            </div>
+                            <div class="mov-valor ${tipoClass}">
+                                ${sinal} ${formatarMoeda(mov.valor)}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+            
+            container.innerHTML = html;
+        };
+        
+        const renderizarResumoFormas = (porFormaPagamento) => {
+            const container = document.getElementById('resumoFormas');
+            
+            if (Object.keys(porFormaPagamento).length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            Object.entries(porFormaPagamento).forEach(([forma, valor]) => {
+                html += `<div class="forma-pagamento">${forma}: <strong>${formatarMoeda(valor)}</strong></div>`;
+            });
+            
+            container.innerHTML = html;
+        };
+        
+        const carregarDados = async () => {
+            const btn = document.getElementById('btnAtualizar');
+            btn.classList.add('girando');
+            
+            try {
+                const response = await fetch('movimentacoes.json?' + Date.now());
+                
+                if (!response.ok) {
+                    throw new Error('Arquivo não encontrado');
+                }
+                
+                const dados = await response.json();
+                
+                // Atualizar última atualização
+                const atualizacao = new Date(dados.atualizadoEm);
+                document.getElementById('ultimaAtualizacao').textContent = 
+                    `Atualizado: ${atualizacao.toLocaleString('pt-BR')}`;
+                
+                // Calcular saldo do dia
+                const { saldo, quantidade, porFormaPagamento } = calcularSaldoDia(dados.movimentacoes);
+                document.getElementById('saldoDia').textContent = formatarMoeda(saldo);
+                document.getElementById('qtdMovimentacoes').textContent = quantidade;
+                
+                // Resumo por forma de pagamento
+                renderizarResumoFormas(porFormaPagamento);
+                
+                // Totais do período
+                const { entradas, saidas } = calcularTotaisPeriodo(dados.movimentacoes);
+                document.getElementById('totalEntradas').textContent = formatarMoeda(entradas);
+                document.getElementById('totalSaidas').textContent = formatarMoeda(saidas);
+                
+                // Renderizar movimentações
+                renderizarMovimentacoes(dados.movimentacoes);
+                
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                document.getElementById('movimentacoes').innerHTML = `
+                    <div class="erro">
+                        ⚠️ Erro ao carregar dados<br>
+                        <small>${error.message}</small>
+                    </div>
+                `;
+            } finally {
+                btn.classList.remove('girando');
+            }
+        };
+        
+        // Carregar dados ao iniciar
+        carregarDados();
+        
+        // Atualizar a cada 2 minutos
+        setInterval(carregarDados, 120000);
+    </script>
+</body>
+</html>

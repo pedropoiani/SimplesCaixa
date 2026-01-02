@@ -332,7 +332,76 @@ sudo apt install python3-tk -y
 
 ---
 
-## 📞 Suporte
+## � Acesso Mobile via GitHub Pages (Opcional)
+
+O sistema permite visualizar as movimentações dos últimos 4 dias no celular através do GitHub Pages. **Não é necessário instalar o Git** em cada computador.
+
+### Passo 1: Criar Repositório no GitHub
+
+1. Acesse [github.com](https://github.com) e faça login
+2. Clique em **"New"** para criar um novo repositório
+3. Nome sugerido: `pdv-mf` ou `pdv-movimentacoes`
+4. Marque como **Público** (necessário para GitHub Pages gratuito)
+5. Clique em **"Create repository"**
+
+### Passo 2: Ativar GitHub Pages
+
+1. No repositório, vá em **Settings** → **Pages**
+2. Em "Source", selecione **Deploy from a branch**
+3. Selecione a branch **main** e a pasta **/docs**
+4. Clique em **Save**
+5. Aguarde alguns minutos - o site estará disponível em:
+   ```
+   https://SEU_USUARIO.github.io/NOME_DO_REPO/
+   ```
+
+### Passo 3: Gerar Token de Acesso
+
+1. No GitHub, vá em **Settings** (do seu perfil, não do repositório)
+2. Role até **Developer settings** → **Personal access tokens** → **Tokens (classic)**
+3. Clique em **"Generate new token (classic)"**
+4. Dê um nome descritivo: `PDV-MF Sync`
+5. Marque a permissão: **repo** (acesso completo a repositórios)
+6. Clique em **"Generate token"**
+7. **IMPORTANTE:** Copie o token gerado (ele só aparece uma vez!)
+
+### Passo 4: Configurar no Sistema PDV-MF
+
+1. Abra o sistema PDV-MF
+2. Vá em **Configurações** (ícone ⚙️)
+3. Na seção **📱 Acesso Mobile (GitHub Pages)**, clique em **"Configurar GitHub"**
+4. Preencha:
+   - **Repositório:** `seu-usuario/nome-do-repo` (ex: `joao/pdv-mf`)
+   - **Token:** Cole o token gerado no passo anterior
+5. Marque **"Sincronização automática ativa"**
+6. Clique em **"Testar Conexão"** para verificar
+7. Clique em **"Salvar"**
+
+### Passo 5: Acessar no Celular
+
+1. No celular, abra o navegador
+2. Acesse: `https://SEU_USUARIO.github.io/NOME_DO_REPO/`
+3. Adicione à tela inicial para acesso rápido (como um app)
+
+### Como Funciona
+
+- A cada movimentação no PDV, os dados são sincronizados automaticamente
+- O celular exibe:
+  - 💰 **Saldo do dia** (entradas de hoje)
+  - 📋 **Movimentações** dos últimos 4 dias
+  - Resumo por forma de pagamento
+- A página atualiza automaticamente a cada 2 minutos
+
+### Dicas de Segurança
+
+- Use um repositório **dedicado** para as movimentações
+- O token fica salvo localmente em `~/.pdvmf/github_config.json`
+- Você pode desativar a sincronização a qualquer momento nas configurações
+- Os dados públicos mostram apenas valores e categorias (sem dados sensíveis)
+
+---
+
+## �📞 Suporte
 
 Se tiver problemas:
 1. Verifique se seguiu todos os passos

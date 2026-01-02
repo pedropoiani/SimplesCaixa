@@ -7,8 +7,10 @@ Tela principal com lançamentos e painel de controle
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
+import threading
 from database import Database
 from utils import formatar_moeda, validar_valor, calcular_troco, formatar_data, fazer_backup
+from github_sync import sincronizar_agora
 from tema import (
     COR_PRIMARIA, COR_PRIMARIA_ESCURA, COR_PRIMARIA_CLARA,
     COR_SECUNDARIA, COR_SUCESSO, COR_PERIGO, COR_ALERTA,
@@ -453,6 +455,17 @@ class PrincipalView(tk.Frame):
         self.label_total_saidas.config(text=formatar_moeda(totais['total_saidas']))
         
         self.atualizar_lancamentos()
+        
+        # Sincronizar com GitHub Pages em segundo plano (não trava a interface)
+        threading.Thread(target=self._sincronizar_github, daemon=True).start()
+    
+    def _sincronizar_github(self):
+        """Sincroniza dados com GitHub Pages em segundo plano"""
+        try:
+            sincronizar_agora(self.db)
+        except Exception as e:
+            # Falha silenciosa - não interrompe o uso do sistema
+            print(f"Erro ao sincronizar com GitHub: {e}")
     
     def atualizar_lancamentos(self):
         """Atualiza a lista de lançamentos"""
