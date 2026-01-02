@@ -240,6 +240,39 @@
             font-weight: bold;
             color: #dc3545;
         }
+        
+        .filtro-periodo {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn-filtro {
+            padding: 8px 16px;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: transparent;
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-filtro.ativo {
+            background: white;
+            color: #667eea;
+            border-color: white;
+            font-weight: bold;
+        }
+        
+        .btn-filtro:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .btn-filtro.ativo:hover {
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -268,7 +301,12 @@
             </div>
         </div>
         
-        <div class="secao-titulo">📋 Movimentações (últimos 4 dias)</div>
+        <div class="secao-titulo">📋 Movimentações</div>
+        
+        <div class="filtro-periodo">
+            <button class="btn-filtro ativo" onclick="filtrarPeriodo('hoje')" id="btnHoje">Hoje</button>
+            <button class="btn-filtro" onclick="filtrarPeriodo('4dias')" id="btn4Dias">Últimos 4 dias</button>
+        </div>
         
         <div class="movimentacoes" id="movimentacoes">
             <div class="vazio">Carregando movimentações...</div>
@@ -280,6 +318,9 @@
     </button>
     
     <script>
+        let todasMovimentacoes = [];
+        let periodoAtual = 'hoje';
+        
         const formatarMoeda = (valor) => {
             return new Intl.NumberFormat('pt-BR', {
                 style: 'currency',
@@ -307,6 +348,15 @@
                 grupos[dia].push(mov);
             });
             return grupos;
+        };
+        
+        const filtrarMovimentacoesPorPeriodo = (movimentacoes, periodo) => {
+            const hoje = new Date().toLocaleDateString('pt-BR');
+            
+            if (periodo === 'hoje') {
+                return movimentacoes.filter(mov => formatarData(mov.data_hora) === hoje);
+            }
+            return movimentacoes; // 4 dias (todas)
         };
         
         const calcularSaldoDia = (movimentacoes) => {
@@ -414,27 +464,28 @@
                 }
                 
                 const dados = await response.json();
+                todasMovimentacoes = dados.movimentacoes || [];
                 
                 // Atualizar última atualização
                 const atualizacao = new Date(dados.atualizadoEm);
                 document.getElementById('ultimaAtualizacao').textContent = 
                     `Atualizado: ${atualizacao.toLocaleString('pt-BR')}`;
                 
-                // Calcular saldo do dia
-                const { saldo, quantidade, porFormaPagamento } = calcularSaldoDia(dados.movimentacoes);
+                // Calcular saldo do dia (sempre do dia atual)
+                const { saldo, quantidade, porFormaPagamento } = calcularSaldoDia(todasMovimentacoes);
                 document.getElementById('saldoDia').textContent = formatarMoeda(saldo);
                 document.getElementById('qtdMovimentacoes').textContent = quantidade;
                 
                 // Resumo por forma de pagamento
                 renderizarResumoFormas(porFormaPagamento);
                 
-                // Totais do período
-                const { entradas, saidas } = calcularTotaisPeriodo(dados.movimentacoes);
+                // Totais do período (4 dias)
+                const { entradas, saidas } = calcularTotaisPeriodo(todasMovimentacoes);
                 document.getElementById('totalEntradas').textContent = formatarMoeda(entradas);
                 document.getElementById('totalSaidas').textContent = formatarMoeda(saidas);
                 
-                // Renderizar movimentações
-                renderizarMovimentacoes(dados.movimentacoes);
+                // Renderizar movimentações conforme filtro atual
+                atualizarListaMovimentacoes();
                 
             } catch (error) {
                 console.error('Erro ao carregar dados:', error);
@@ -447,6 +498,21 @@
             } finally {
                 btn.classList.remove('girando');
             }
+        };
+        
+        const atualizarListaMovimentacoes = () => {
+            const movsFiltradas = filtrarMovimentacoesPorPeriodo(todasMovimentacoes, periodoAtual);
+            renderizarMovimentacoes(movsFiltradas);
+        };
+        
+        const filtrarPeriodo = (periodo) => {
+            periodoAtual = periodo;
+            
+            // Atualizar botões
+            document.getElementById('btnHoje').classList.toggle('ativo', periodo === 'hoje');
+            document.getElementById('btn4Dias').classList.toggle('ativo', periodo === '4dias');
+            
+            atualizarListaMovimentacoes();
         };
         
         // Carregar dados ao iniciar
