@@ -44,10 +44,11 @@ class GitHubSync:
         return {
             'token': '',
             'repo': '',  # formato: usuario/repositorio
-            'ativo': False
+            'ativo': False,
+            'senha_acesso': ''  # senha para acessar o painel mobile
         }
     
-    def salvar_config(self, token: str, repo: str, ativo: bool = True):
+    def salvar_config(self, token: str, repo: str, ativo: bool = True, senha_acesso: str = ''):
         """
         Salva as configurações do GitHub
         
@@ -55,11 +56,13 @@ class GitHubSync:
             token: Token de acesso pessoal do GitHub
             repo: Repositório no formato 'usuario/repositorio'
             ativo: Se a sincronização está ativa
+            senha_acesso: Senha para acessar o painel mobile
         """
         self.config = {
             'token': token,
             'repo': repo,
-            'ativo': ativo
+            'ativo': ativo,
+            'senha_acesso': senha_acesso
         }
         with open(self.config_path, 'w', encoding='utf-8') as f:
             json.dump(self.config, f, indent=2)
@@ -163,9 +166,10 @@ class GitHubSync:
         if not self.esta_configurado():
             return False
         
-        # Preparar dados
+        # Preparar dados (incluindo senha para autenticação no painel)
         dados = {
             'atualizadoEm': datetime.now().isoformat(),
+            'senha': self.config.get('senha_acesso', ''),
             'movimentacoes': movimentacoes
         }
         

@@ -503,7 +503,7 @@ class ConfiguracaoView(tk.Frame):
         """Abre o dialog para configurar o GitHub Pages"""
         dialog = tk.Toplevel(self)
         dialog.title("Configurar GitHub Pages")
-        dialog.geometry("500x420")
+        dialog.geometry("500x520")
         dialog.transient(self)
         dialog.grab_set()
         dialog.resizable(False, False)
@@ -555,6 +555,20 @@ class ConfiguracaoView(tk.Frame):
             fg="#888"
         ).pack(anchor=tk.W, pady=(0, 15))
         
+        # Senha de acesso ao painel mobile
+        tk.Label(frame, text="🔒 Senha de Acesso ao Painel Mobile:", font=("Arial", 10, "bold"), bg="white").pack(anchor=tk.W)
+        entry_senha = tk.Entry(frame, font=("Arial", 11), width=40)
+        entry_senha.pack(fill=tk.X, pady=(5, 5))
+        entry_senha.insert(0, self.github_sync.config.get('senha_acesso', ''))
+        
+        tk.Label(
+            frame,
+            text="Esta senha será solicitada para acessar o painel no celular.",
+            font=("Arial", 8),
+            bg="white",
+            fg="#888"
+        ).pack(anchor=tk.W, pady=(0, 15))
+        
         # Checkbox ativo
         ativo_var = tk.BooleanVar(value=self.github_sync.config.get('ativo', False))
         tk.Checkbutton(
@@ -586,7 +600,8 @@ class ConfiguracaoView(tk.Frame):
             dialog.update()
             
             # Salvar temporariamente para testar
-            self.github_sync.salvar_config(token, repo, ativo_var.get())
+            senha = entry_senha.get().strip()
+            self.github_sync.salvar_config(token, repo, ativo_var.get(), senha)
             sucesso, mensagem = self.github_sync.testar_conexao()
             
             if sucesso:
@@ -597,12 +612,17 @@ class ConfiguracaoView(tk.Frame):
         def salvar():
             repo = entry_repo.get().strip()
             token = entry_token.get().strip()
+            senha = entry_senha.get().strip()
             
             if ativo_var.get() and (not repo or not token):
                 messagebox.showerror("Erro", "Preencha o repositório e o token!", parent=dialog)
                 return
             
-            self.github_sync.salvar_config(token, repo, ativo_var.get())
+            if ativo_var.get() and not senha:
+                messagebox.showerror("Erro", "Defina uma senha de acesso ao painel!", parent=dialog)
+                return
+            
+            self.github_sync.salvar_config(token, repo, ativo_var.get(), senha)
             
             # Atualizar status na tela principal
             status_text = "✅ Configurado" if self.github_sync.esta_configurado() else "❌ Não configurado"
