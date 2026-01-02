@@ -1,6 +1,16 @@
 {
-  "atualizadoEm": "2026-01-02T18:26:17.569827",
+  "atualizadoEm": "2026-01-02T18:26:36.684808",
   "movimentacoes": [
+    {
+      "id": 24,
+      "tipo": "Saída",
+      "categoria": "Sangria - Despesas da Loja",
+      "valor": 9.0,
+      "forma_pagamento_nome": null,
+      "observacao": "pao",
+      "data_hora": "2026-01-02 18:26:36",
+      "operador": ""
+    },
     {
       "id": 23,
       "tipo": "Entrada",
