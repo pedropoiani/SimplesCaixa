@@ -291,11 +291,11 @@
             <div class="resumo-formas" id="resumoFormas"></div>
             <div class="total-periodo">
                 <div>
-                    <div class="label">Entradas (4 dias)</div>
+                    <div class="label" id="labelEntradas">Entradas (hoje)</div>
                     <div class="valor-entrada" id="totalEntradas">R$ 0,00</div>
                 </div>
                 <div>
-                    <div class="label">Saídas (4 dias)</div>
+                    <div class="label" id="labelSaidas">Saídas (hoje)</div>
                     <div class="valor-saida" id="totalSaidas">R$ 0,00</div>
                 </div>
             </div>
@@ -479,13 +479,8 @@
                 // Resumo por forma de pagamento
                 renderizarResumoFormas(porFormaPagamento);
                 
-                // Totais do período (4 dias)
-                const { entradas, saidas } = calcularTotaisPeriodo(todasMovimentacoes);
-                document.getElementById('totalEntradas').textContent = formatarMoeda(entradas);
-                document.getElementById('totalSaidas').textContent = formatarMoeda(saidas);
-                
-                // Renderizar movimentações conforme filtro atual
-                atualizarListaMovimentacoes();
+                // Atualizar tudo conforme filtro atual
+                atualizarTotaisELista();
                 
             } catch (error) {
                 console.error('Erro ao carregar dados:', error);
@@ -500,8 +495,20 @@
             }
         };
         
-        const atualizarListaMovimentacoes = () => {
+        const atualizarTotaisELista = () => {
             const movsFiltradas = filtrarMovimentacoesPorPeriodo(todasMovimentacoes, periodoAtual);
+            
+            // Atualizar labels
+            const labelPeriodo = periodoAtual === 'hoje' ? 'hoje' : '4 dias';
+            document.getElementById('labelEntradas').textContent = `Entradas (${labelPeriodo})`;
+            document.getElementById('labelSaidas').textContent = `Saídas (${labelPeriodo})`;
+            
+            // Calcular totais do período filtrado
+            const { entradas, saidas } = calcularTotaisPeriodo(movsFiltradas);
+            document.getElementById('totalEntradas').textContent = formatarMoeda(entradas);
+            document.getElementById('totalSaidas').textContent = formatarMoeda(saidas);
+            
+            // Renderizar lista
             renderizarMovimentacoes(movsFiltradas);
         };
         
@@ -512,7 +519,7 @@
             document.getElementById('btnHoje').classList.toggle('ativo', periodo === 'hoje');
             document.getElementById('btn4Dias').classList.toggle('ativo', periodo === '4dias');
             
-            atualizarListaMovimentacoes();
+            atualizarTotaisELista();
         };
         
         // Carregar dados ao iniciar
