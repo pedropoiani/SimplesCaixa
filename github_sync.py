@@ -166,10 +166,9 @@ class GitHubSync:
         if not self.esta_configurado():
             return False
         
-        # Preparar dados (incluindo senha para autenticação no painel)
+        # Preparar dados (SEM a senha - agora fica no servidor Vercel)
         dados = {
             'atualizadoEm': datetime.now().isoformat(),
-            'senha': self.config.get('senha_acesso', ''),
             'movimentacoes': movimentacoes
         }
         

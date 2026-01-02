@@ -16,6 +16,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "/d8f3a2b9c1e7.json",
+      "status": 403
+    },
+    {
       "src": "/(.*)",
       "dest": "/docs/$1"
     }
@@ -39,15 +43,6 @@
         {
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/d8f3a2b9c1e7.json",
-      "headers": [
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex, nofollow"
         }
       ]
     }
