@@ -1,6 +1,16 @@
 {
-  "atualizadoEm": "2026-01-02T18:26:02.947530",
+  "atualizadoEm": "2026-01-02T18:26:11.414075",
   "movimentacoes": [
+    {
+      "id": 22,
+      "tipo": "Entrada",
+      "categoria": "Venda",
+      "valor": 35.0,
+      "forma_pagamento_nome": "Cartão Crédito",
+      "observacao": "",
+      "data_hora": "2026-01-02 18:26:11",
+      "operador": ""
+    },
     {
       "id": 21,
       "tipo": "Entrada",
