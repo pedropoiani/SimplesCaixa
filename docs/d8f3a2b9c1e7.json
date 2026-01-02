@@ -1,6 +1,16 @@
 {
-  "atualizadoEm": "2026-01-02T18:23:54.837636",
+  "atualizadoEm": "2026-01-02T18:24:01.068661",
   "movimentacoes": [
+    {
+      "id": 5,
+      "tipo": "Entrada",
+      "categoria": "Venda",
+      "valor": 30.0,
+      "forma_pagamento_nome": "Dinheiro",
+      "observacao": "",
+      "data_hora": "2026-01-02 18:24:01",
+      "operador": ""
+    },
     {
       "id": 4,
       "tipo": "Entrada",
