@@ -7,6 +7,7 @@ Tela de configurações do sistema
 import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
+from datetime import datetime
 from database import Database
 from github_sync import get_github_sync, sincronizar_agora
 from tema import (
@@ -252,7 +253,7 @@ class ConfiguracaoView(tk.Frame):
             pady=8
         ).pack(side=tk.LEFT, padx=(0, 10))
         
-        tk.Button(
+        self.btn_sincronizar = tk.Button(
             botoes_github,
             text="🔄 Sincronizar Agora",
             font=("Arial", 10),
@@ -263,7 +264,18 @@ class ConfiguracaoView(tk.Frame):
             relief=tk.FLAT,
             padx=15,
             pady=8
-        ).pack(side=tk.LEFT)
+        )
+        self.btn_sincronizar.pack(side=tk.LEFT)
+        
+        # Label de status da sincronização
+        self.label_sync_status = tk.Label(
+            github_frame,
+            text="",
+            font=("Arial", 9),
+            bg="white",
+            fg="#666"
+        )
+        self.label_sync_status.pack(anchor=tk.W, pady=(10, 0))
         
         # Botão voltar
         btn_voltar = tk.Button(
@@ -676,6 +688,11 @@ class ConfiguracaoView(tk.Frame):
             messagebox.showwarning("Atenção", "Configure o GitHub primeiro!")
             return
         
+        # Desabilitar botão e mostrar status
+        self.btn_sincronizar.config(state=tk.DISABLED, text="⏳ Sincronizando...")
+        self.label_sync_status.config(text="🔄 Enviando dados...", fg="#3498db")
+        self.update()
+        
         # Sincronizar em segundo plano com nova conexão do banco
         db_path = self.db.db_path
         
@@ -685,12 +702,31 @@ class ConfiguracaoView(tk.Frame):
                 db_thread = Database(db_path)
                 sucesso = sincronizar_agora(db_thread)
                 db_thread.close()
-                if sucesso:
-                    messagebox.showinfo("Sucesso", "Movimentações sincronizadas com sucesso!\n\nAcesse no celular:\nhttps://SEU_USUARIO.github.io/SEU_REPO/")
-                else:
-                    messagebox.showerror("Erro", "Falha ao sincronizar. Verifique as configurações.")
+                
+                # Atualizar UI na thread principal
+                def atualizar_ui():
+                    self.btn_sincronizar.config(state=tk.NORMAL, text="🔄 Sincronizar Agora")
+                    if sucesso:
+                        agora = datetime.now().strftime('%H:%M:%S')
+                        self.label_sync_status.config(
+                            text=f"✅ Sincronizado às {agora}",
+                            fg="#27ae60"
+                        )
+                    else:
+                        self.label_sync_status.config(
+                            text="❌ Falha na sincronização",
+                            fg="#e74c3c"
+                        )
+                
+                self.after(0, atualizar_ui)
+                
             except Exception as e:
-                messagebox.showerror("Erro", f"Erro ao sincronizar:\n{str(e)}")
+                def mostrar_erro():
+                    self.btn_sincronizar.config(state=tk.NORMAL, text="🔄 Sincronizar Agora")
+                    self.label_sync_status.config(
+                        text=f"❌ Erro: {str(e)[:50]}",
+                        fg="#e74c3c"
+                    )
+                self.after(0, mostrar_erro)
         
-        messagebox.showinfo("Aguarde", "Sincronizando...")
         threading.Thread(target=sync, daemon=True).start()

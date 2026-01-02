@@ -17,6 +17,14 @@
     },
     {
       "src": "/d8f3a2b9c1e7.json",
+      "status": 403,
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "dest": "/api/blocked"
+    },
+    {
+      "src": "/(.*\\.json)",
       "status": 403
     },
     {
