@@ -656,10 +656,15 @@ class ConfiguracaoView(tk.Frame):
             messagebox.showwarning("Atenção", "Configure o GitHub primeiro!")
             return
         
-        # Sincronizar em segundo plano
+        # Sincronizar em segundo plano com nova conexão do banco
+        db_path = self.db.db_path
+        
         def sync():
             try:
-                sucesso = sincronizar_agora(self.db)
+                from database import Database
+                db_thread = Database(db_path)
+                sucesso = sincronizar_agora(db_thread)
+                db_thread.close()
                 if sucesso:
                     messagebox.showinfo("Sucesso", "Movimentações sincronizadas com sucesso!\n\nAcesse no celular:\nhttps://SEU_USUARIO.github.io/SEU_REPO/")
                 else:
