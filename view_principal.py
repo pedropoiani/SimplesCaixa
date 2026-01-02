@@ -457,12 +457,18 @@ class PrincipalView(tk.Frame):
         self.atualizar_lancamentos()
         
         # Sincronizar com GitHub Pages em segundo plano (não trava a interface)
-        threading.Thread(target=self._sincronizar_github, daemon=True).start()
+        # Passa o caminho do banco para criar nova conexão na thread
+        db_path = self.db.db_path
+        threading.Thread(target=self._sincronizar_github, args=(db_path,), daemon=True).start()
     
-    def _sincronizar_github(self):
+    def _sincronizar_github(self, db_path):
         """Sincroniza dados com GitHub Pages em segundo plano"""
         try:
-            sincronizar_agora(self.db)
+            # Cria nova conexão do banco na thread (SQLite requer isso)
+            from database import Database
+            db_thread = Database(db_path)
+            sincronizar_agora(db_thread)
+            db_thread.close()
         except Exception as e:
             # Falha silenciosa - não interrompe o uso do sistema
             print(f"Erro ao sincronizar com GitHub: {e}")
