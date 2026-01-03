@@ -181,6 +181,9 @@
   </div>
 
   <script>
+    // URL do arquivo JSON no GitHub (raw)
+    const GITHUB_RAW_URL = 'https://raw.githubusercontent.com/pedropoiani/SimplesCaixa/caixa-loja/public/data/movimentacoes.json';
+    
     function formatarMoeda(valor) {
       return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
@@ -192,7 +195,7 @@
 
     async function carregarDados() {
       try {
-        const res = await fetch('./data/movimentacoes.json?' + Date.now());
+        const res = await fetch(GITHUB_RAW_URL + '?' + Date.now());
         const dados = await res.json();
         
         // Status do caixa
