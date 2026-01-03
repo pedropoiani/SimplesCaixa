@@ -1,5 +1,9 @@
 {
-  "caixa_aberto": null,
+  "caixa_aberto": {
+    "valor_inicial": 100.0,
+    "operador": "Pedro",
+    "data_abertura": "2026-01-02 23:12:22"
+  },
   "movimentacoes": [],
-  "ultima_atualizacao": null
+  "ultima_atualizacao": "2026-01-02 23:12:22"
 }
