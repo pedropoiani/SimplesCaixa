@@ -17,6 +17,12 @@ from tema import (
     obter_logo_perfil, NOME_SISTEMA
 )
 try:
+    from salvar_json import registrar_callback_sync, remover_callback_sync, obter_status_sync
+    SYNC_DISPONIVEL = True
+except ImportError:
+    SYNC_DISPONIVEL = False
+
+try:
     from PIL import Image, ImageTk
     PIL_DISPONIVEL = True
 except ImportError:
@@ -137,6 +143,40 @@ class PrincipalView(tk.Frame):
         self.logo_img = None  # Referência para a imagem
         self.criar_widgets()
         self.atualizar_painel()
+        
+        # Registrar callback para status de sincronização
+        if SYNC_DISPONIVEL:
+            registrar_callback_sync(self._atualizar_status_sync)
+            # Atualizar status inicial
+            self._atualizar_status_sync(obter_status_sync())
+    
+    def destroy(self):
+        """Remove callback ao destruir a view"""
+        if SYNC_DISPONIVEL:
+            remover_callback_sync(self._atualizar_status_sync)
+        super().destroy()
+    
+    def _atualizar_status_sync(self, status_info):
+        """Atualiza o indicador visual de sincronização"""
+        try:
+            status = status_info.get("status")
+            mensagem = status_info.get("mensagem", "")
+            hora = status_info.get("data", "")
+            
+            if status == "sucesso":
+                self.sync_indicator.config(text="🟢", fg="#27ae60")
+                self.sync_label.config(text=f"Sync OK ({hora})", fg="#27ae60")
+            elif status == "sincronizando":
+                self.sync_indicator.config(text="🔄", fg="#f39c12")
+                self.sync_label.config(text="Sincronizando...", fg="#f39c12")
+            elif status == "erro":
+                self.sync_indicator.config(text="🔴", fg="#e74c3c")
+                self.sync_label.config(text=f"Erro ({hora})", fg="#e74c3c")
+            else:
+                self.sync_indicator.config(text="⚪", fg="#95a5a6")
+                self.sync_label.config(text="Aguardando", fg="#95a5a6")
+        except:
+            pass  # Widget pode não existir ainda
     
     def criar_widgets(self):
         """Cria os widgets da interface"""
@@ -168,6 +208,28 @@ class PrincipalView(tk.Frame):
             bg=COR_PRIMARIA,
             fg=COR_TEXTO_CLARO
         ).pack(side=tk.LEFT)
+        
+        # Indicador de status de sincronização GitHub
+        sync_frame = tk.Frame(top_frame, bg=COR_PRIMARIA)
+        sync_frame.pack(side=tk.LEFT, padx=(20, 0))
+        
+        self.sync_indicator = tk.Label(
+            sync_frame,
+            text="⚪",
+            font=("Arial", 14),
+            bg=COR_PRIMARIA,
+            fg="#95a5a6"
+        )
+        self.sync_indicator.pack(side=tk.LEFT)
+        
+        self.sync_label = tk.Label(
+            sync_frame,
+            text="Aguardando",
+            font=("Arial", 9),
+            bg=COR_PRIMARIA,
+            fg="#95a5a6"
+        )
+        self.sync_label.pack(side=tk.LEFT, padx=(5, 0))
         
         # Botões da barra superior
         btn_frame = tk.Frame(top_frame, bg=COR_PRIMARIA)

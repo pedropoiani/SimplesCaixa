@@ -15,18 +15,96 @@ CAMINHO_JSON = os.path.join(os.path.dirname(__file__), 'public', 'data', 'movime
 # Controle de sincronização automática
 SYNC_AUTOMATICO = True  # Mude para False se não quiser sincronizar automaticamente
 
+# Status da última sincronização (para exibir na interface)
+_ultimo_sync = {
+    "status": None,  # "sucesso", "erro", "sincronizando", None
+    "mensagem": "",
+    "data": None
+}
+
+# Callbacks para notificar a interface
+_sync_callbacks = []
+
+
+def registrar_callback_sync(callback):
+    """Registra um callback para ser chamado quando o status de sync mudar"""
+    if callback not in _sync_callbacks:
+        _sync_callbacks.append(callback)
+
+
+def remover_callback_sync(callback):
+    """Remove um callback registrado"""
+    if callback in _sync_callbacks:
+        _sync_callbacks.remove(callback)
+
+
+def _notificar_callbacks():
+    """Notifica todos os callbacks sobre mudança de status"""
+    for callback in _sync_callbacks:
+        try:
+            callback(_ultimo_sync)
+        except:
+            pass
+
+
+def obter_status_sync():
+    """Retorna o status da última sincronização"""
+    return _ultimo_sync.copy()
+
 
 def _sincronizar_github():
     """Sincroniza com GitHub se habilitado"""
+    global _ultimo_sync
+    
     if not SYNC_AUTOMATICO:
-        return
+        return False
+    
+    # Atualiza status para "sincronizando"
+    _ultimo_sync = {
+        "status": "sincronizando",
+        "mensagem": "Sincronizando com GitHub...",
+        "data": datetime.now().strftime("%H:%M:%S")
+    }
+    _notificar_callbacks()
+    
     try:
         from github_sync import sincronizar_json
-        sincronizar_json()
+        resultado = sincronizar_json()
+        
+        if resultado:
+            _ultimo_sync = {
+                "status": "sucesso",
+                "mensagem": "Sincronizado com sucesso!",
+                "data": datetime.now().strftime("%H:%M:%S")
+            }
+        else:
+            _ultimo_sync = {
+                "status": "erro",
+                "mensagem": "Falha na sincronização",
+                "data": datetime.now().strftime("%H:%M:%S")
+            }
+        
+        _notificar_callbacks()
+        return resultado
+        
     except ImportError:
-        pass  # Módulo não disponível
+        _ultimo_sync = {
+            "status": "erro",
+            "mensagem": "Módulo github_sync não encontrado",
+            "data": datetime.now().strftime("%H:%M:%S")
+        }
+        _notificar_callbacks()
+        return False
+        
     except Exception as e:
+        _ultimo_sync = {
+            "status": "erro",
+            "mensagem": f"Erro: {str(e)[:30]}",
+            "data": datetime.now().strftime("%H:%M:%S")
+        }
+        _notificar_callbacks()
         print(f"⚠️ Erro ao sincronizar com GitHub: {e}")
+        return False
 
 
 def garantir_pasta():
