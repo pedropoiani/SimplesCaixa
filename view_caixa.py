@@ -120,11 +120,12 @@ class TecladoNumerico(tk.Frame):
 class AberturaView(tk.Frame):
     """Tela de abertura de caixa"""
     
-    def __init__(self, parent, db: Database, voltar_callback, abrir_callback):
+    def __init__(self, parent, db: Database, voltar_callback, abrir_callback, historico_callback=None):
         super().__init__(parent)
         self.db = db
         self.voltar_callback = voltar_callback
         self.abrir_callback = abrir_callback
+        self.historico_callback = historico_callback
         
         self.configure(bg=COR_FUNDO)
         self.logo_img = None
@@ -257,6 +258,21 @@ class AberturaView(tk.Frame):
             pady=15
         ).pack(side=tk.LEFT, padx=5)
         
+        # Botão Ver Relatórios (se callback disponível)
+        if self.historico_callback:
+            tk.Button(
+                botoes_frame,
+                text="📊 Ver Relatórios",
+                font=("Arial", 12),
+                bg=COR_PRIMARIA,
+                fg=COR_TEXTO_CLARO,
+                command=self.historico_callback,
+                cursor="hand2",
+                relief=tk.FLAT,
+                padx=30,
+                pady=15
+            ).pack(side=tk.LEFT, padx=5)
+        
         self.entry_troco.bind('<Return>', lambda e: self.abrir_caixa())
     
     def abrir_caixa(self):
@@ -343,20 +359,32 @@ class FechamentoView(tk.Frame):
         # Labels de resumo
         self.label_troco = self._criar_label_resumo(resumo_frame, "Troco Inicial:", 0)
         self.label_entradas = self._criar_label_resumo(resumo_frame, "Total Entradas:", 1)
-        self.label_saidas = self._criar_label_resumo(resumo_frame, "Total Saídas:", 2)
+        self.label_dinheiro = self._criar_label_resumo(resumo_frame, "• Dinheiro:", 2, indent=True)
+        self.label_cartao = self._criar_label_resumo(resumo_frame, "• Cartão:", 3, indent=True)
+        self.label_pix = self._criar_label_resumo(resumo_frame, "• PIX:", 4, indent=True)
+        self.label_saidas = self._criar_label_resumo(resumo_frame, "Total Saídas:", 5)
         
         ttk.Separator(resumo_frame, orient='horizontal').grid(
-            row=3, column=0, columnspan=2, sticky=tk.EW, pady=10
+            row=6, column=0, columnspan=2, sticky=tk.EW, pady=10
         )
         
-        self.label_saldo = tk.Label(
+        self.label_saldo_dinheiro = tk.Label(
             resumo_frame,
-            text="Saldo Esperado: R$ 0,00",
+            text="💰 Dinheiro no Caixa: R$ 0,00",
             font=("Arial", 14, "bold"),
             bg="white",
             fg="#27ae60"
         )
-        self.label_saldo.grid(row=4, column=0, columnspan=2, pady=10)
+        self.label_saldo_dinheiro.grid(row=7, column=0, columnspan=2, pady=5)
+        
+        self.label_outros = tk.Label(
+            resumo_frame,
+            text="(Cartão + PIX: R$ 0,00)",
+            font=("Arial", 10),
+            bg="white",
+            fg="#555"
+        )
+        self.label_outros.grid(row=8, column=0, columnspan=2, pady=(0, 10))
         
         # Frame de contagem com teclado
         contagem_frame = tk.LabelFrame(
@@ -379,14 +407,14 @@ class FechamentoView(tk.Frame):
         
         tk.Label(
             left_conf,
-            text="Valor Contado (R$):",
+            text="Dinheiro Contado (R$):",
             font=("Arial", 11, "bold"),
             bg="white"
         ).pack(anchor=tk.W)
         
         tk.Label(
             left_conf,
-            text="(Opcional - deixe em branco se não conferir)",
+            text="(Conte apenas o dinheiro físico no caixa)",
             font=("Arial", 9),
             bg="white",
             fg="#777"
@@ -463,15 +491,19 @@ class FechamentoView(tk.Frame):
             pady=15
         ).pack(side=tk.LEFT, padx=5)
     
-    def _criar_label_resumo(self, parent, texto, row):
+    def _criar_label_resumo(self, parent, texto, row, indent=False):
         """Cria um par de labels para o resumo"""
-        tk.Label(
+        label_texto = tk.Label(
             parent,
             text=texto,
             font=("Arial", 11),
             bg="white",
             anchor=tk.W
-        ).grid(row=row, column=0, sticky=tk.W, pady=5)
+        )
+        if indent:
+            label_texto.grid(row=row, column=0, sticky=tk.W, pady=2, padx=(20, 0))
+        else:
+            label_texto.grid(row=row, column=0, sticky=tk.W, pady=5)
         
         label_valor = tk.Label(
             parent,
@@ -487,16 +519,35 @@ class FechamentoView(tk.Frame):
     def atualizar_resumo(self):
         """Atualiza o resumo do caixa"""
         totais = self.db.obter_totais_caixa_aberto(self.caixa_id)
+        por_forma = totais['por_forma_pagamento']
         
+        # Valores por forma de pagamento
+        dinheiro = por_forma.get('Dinheiro', 0)
+        cartao = por_forma.get('Cartão', 0)
+        pix = por_forma.get('PIX', 0)
+        outros = totais['total_entradas'] - dinheiro - cartao - pix
+        
+        # Atualizar labels
         self.label_troco.config(text=formatar_moeda(totais['troco_inicial']))
         self.label_entradas.config(text=formatar_moeda(totais['total_entradas']))
+        self.label_dinheiro.config(text=formatar_moeda(dinheiro))
+        self.label_cartao.config(text=formatar_moeda(cartao))
+        self.label_pix.config(text=formatar_moeda(pix))
         self.label_saidas.config(text=formatar_moeda(totais['total_saidas']))
-        self.label_saldo.config(text=f"Saldo Esperado: {formatar_moeda(totais['saldo_atual'])}")
         
-        self.saldo_esperado = totais['saldo_atual']
+        # Calcular saldo esperado em DINHEIRO (troco inicial + dinheiro recebido - saídas)
+        self.saldo_esperado_dinheiro = totais['troco_inicial'] + dinheiro - totais['total_saidas']
+        self.valor_cartao_pix = cartao + pix + outros
+        
+        self.label_saldo_dinheiro.config(
+            text=f"💰 Dinheiro no Caixa: {formatar_moeda(self.saldo_esperado_dinheiro)}"
+        )
+        self.label_outros.config(
+            text=f"(Cartão + PIX: {formatar_moeda(self.valor_cartao_pix)})"
+        )
     
     def calcular_diferenca(self):
-        """Calcula a diferença entre o valor contado e o esperado"""
+        """Calcula a diferença entre o dinheiro contado e o esperado"""
         valor_str = self.entry_valor_contado.get().strip()
         
         if not valor_str:
@@ -509,10 +560,10 @@ class FechamentoView(tk.Frame):
             return
         
         valor_contado = resultado
-        diferenca = valor_contado - self.saldo_esperado
+        diferenca = valor_contado - self.saldo_esperado_dinheiro
         
         if abs(diferenca) < 0.01:
-            texto = "✓ Caixa confere!"
+            texto = "✓ Dinheiro confere!"
             cor = "#27ae60"
         elif diferenca > 0:
             texto = f"Sobra: {formatar_moeda(diferenca)}"
@@ -540,11 +591,12 @@ class FechamentoView(tk.Frame):
         
         # Confirmar fechamento
         mensagem = "Confirma o fechamento do caixa?\n\n"
-        mensagem += f"Saldo Esperado: {formatar_moeda(self.saldo_esperado)}\n"
+        mensagem += f"💰 Dinheiro Esperado no Caixa: {formatar_moeda(self.saldo_esperado_dinheiro)}\n"
+        mensagem += f"💳 Cartão + PIX: {formatar_moeda(self.valor_cartao_pix)}\n\n"
         
         if valor_contado is not None:
-            mensagem += f"Valor Contado: {formatar_moeda(valor_contado)}\n"
-            diferenca = valor_contado - self.saldo_esperado
+            mensagem += f"Dinheiro Contado: {formatar_moeda(valor_contado)}\n"
+            diferenca = valor_contado - self.saldo_esperado_dinheiro
             if abs(diferenca) > 0.01:
                 if diferenca > 0:
                     mensagem += f"Sobra: {formatar_moeda(diferenca)}\n"

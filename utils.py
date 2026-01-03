@@ -532,6 +532,22 @@ def formatar_data_curta(data_str: str) -> str:
     except:
         return data_str
 
+def converter_data_br_para_sql(data_br: str) -> str:
+    """Converte data do formato brasileiro (DD/MM/YYYY) para SQL (YYYY-MM-DD)"""
+    try:
+        if not data_br or not data_br.strip():
+            return None
+        
+        # Remove espaços
+        data_br = data_br.strip()
+        
+        # Tenta parsear formato brasileiro
+        dt = datetime.strptime(data_br, "%d/%m/%Y")
+        return dt.strftime("%Y-%m-%d")
+    except:
+        # Se falhar, retorna None
+        return None
+
 def validar_valor(valor_str: str) -> tuple:
     """Valida um valor monetário digitado"""
     try:

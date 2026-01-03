@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDV-MF - Caixa em Tempo Real</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); 
+      min-height: 100vh; 
+      padding: 20px; 
+    }
+    .container { max-width: 950px; margin: 0 auto; }
+    
+    .header { 
+      background: rgba(255,255,255,0.95); 
+      padding: 25px; 
+      border-radius: 12px; 
+      margin-bottom: 20px; 
+      text-align: center; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+    }
+    .header h1 { color: #1e3c72; font-size: 28px; margin-bottom: 5px; }
+    .header p { color: #666; font-size: 14px; }
+    
+    .status { 
+      display: inline-block; 
+      padding: 10px 25px; 
+      border-radius: 25px; 
+      margin-top: 15px; 
+      font-weight: 600; 
+      font-size: 16px;
+    }
+    .status.aberto { background: #27ae60; color: white; }
+    .status.fechado { background: #95a5a6; color: white; }
+    
+    .filtro { 
+      background: rgba(255,255,255,0.95); 
+      padding: 18px 25px; 
+      border-radius: 10px; 
+      margin-bottom: 20px; 
+      display: flex; 
+      gap: 15px; 
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .filtro label { font-weight: 600; color: #333; }
+    .filtro select { 
+      padding: 12px 18px; 
+      font-size: 14px; 
+      border: 2px solid #e0e0e0; 
+      border-radius: 8px; 
+      cursor: pointer;
+      background: white;
+    }
+    .filtro select:focus { border-color: #1e3c72; outline: none; }
+    
+    .cards { 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      gap: 15px; 
+      margin-bottom: 20px; 
+    }
+    .card { 
+      background: rgba(255,255,255,0.95); 
+      padding: 25px; 
+      border-radius: 12px; 
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .card h3 { color: #888; font-size: 13px; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+    .card .valor { font-size: 28px; font-weight: 700; }
+    .card.entradas .valor { color: #27ae60; }
+    .card.saidas .valor { color: #e74c3c; }
+    .card.saldo .valor { color: #1e3c72; }
+    
+    table { 
+      width: 100%; 
+      background: rgba(255,255,255,0.95); 
+      border-radius: 12px; 
+      overflow: hidden; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+    }
+    th, td { padding: 16px 15px; text-align: left; }
+    th { background: #2c3e50; color: white; font-weight: 600; font-size: 13px; text-transform: uppercase; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    tr:hover { background: #eef2f7; }
+    
+    .entrada { color: #27ae60; font-weight: 600; }
+    .saida { color: #e74c3c; font-weight: 600; }
+    
+    .badge { 
+      display: inline-block; 
+      padding: 4px 10px; 
+      border-radius: 12px; 
+      font-size: 11px; 
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge.entrada { background: #d4edda; color: #155724; }
+    .badge.saida { background: #f8d7da; color: #721c24; }
+    
+    .footer { 
+      text-align: center; 
+      color: rgba(255,255,255,0.7); 
+      margin-top: 20px; 
+      font-size: 13px; 
+    }
+    .footer .update { 
+      background: rgba(255,255,255,0.2); 
+      display: inline-block; 
+      padding: 8px 15px; 
+      border-radius: 20px; 
+      margin-top: 10px;
+    }
+    
+    .empty { text-align: center; padding: 40px; color: #999; }
+    
+    @media (max-width: 768px) {
+      .cards { grid-template-columns: 1fr; }
+      .filtro { flex-direction: column; align-items: stretch; }
+      th, td { padding: 12px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>💰 PDV-MF</h1>
+      <p>Movimentações do Caixa em Tempo Real</p>
+      <div id="status" class="status fechado">🔒 Caixa Fechado</div>
+    </div>
+    
+    <div class="filtro">
+      <label>📅 Período:</label>
+      <select id="filtro">
+        <option value="1">Hoje</option>
+        <option value="3">Últimos 3 dias</option>
+        <option value="5" selected>Últimos 5 dias</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="30">Últimos 30 dias</option>
+      </select>
+    </div>
+
+    <div class="cards">
+      <div class="card entradas">
+        <h3>📈 Entradas</h3>
+        <div class="valor" id="entradas">R$ 0,00</div>
+      </div>
+      <div class="card saidas">
+        <h3>📉 Saídas</h3>
+        <div class="valor" id="saidas">R$ 0,00</div>
+      </div>
+      <div class="card saldo">
+        <h3>💵 Saldo</h3>
+        <div class="valor" id="saldo">R$ 0,00</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Data/Hora</th>
+          <th>Tipo</th>
+          <th>Descrição</th>
+          <th>Pagamento</th>
+          <th style="text-align: right;">Valor</th>
+        </tr>
+      </thead>
+      <tbody id="corpo">
+        <tr><td colspan="5" class="empty">Carregando...</td></tr>
+      </tbody>
+    </table>
+    
+    <div class="footer">
+      <p>Atualiza automaticamente a cada 5 segundos</p>
+      <div class="update">🔄 Última atualização: <span id="ultima">--</span></div>
+    </div>
+  </div>
+
+  <script>
+    function formatarMoeda(valor) {
+      return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    function formatarData(dataStr) {
+      const data = new Date(dataStr);
+      return data.toLocaleString('pt-BR');
+    }
+
+    async function carregarDados() {
+      try {
+        const res = await fetch('./data/movimentacoes.json?' + Date.now());
+        const dados = await res.json();
+        
+        // Status do caixa
+        const statusEl = document.getElementById('status');
+        if (dados.caixa_aberto) {
+          statusEl.textContent = '✅ Caixa Aberto';
+          statusEl.className = 'status aberto';
+        } else {
+          statusEl.textContent = '🔒 Caixa Fechado';
+          statusEl.className = 'status fechado';
+        }
+        
+        // Filtrar por dias
+        const dias = parseInt(document.getElementById('filtro').value);
+        const agora = new Date();
+        const limite = new Date(agora - dias * 24 * 60 * 60 * 1000);
+        
+        const movimentacoes = dados.movimentacoes || [];
+        const filtradas = movimentacoes.filter(m => new Date(m.data) >= limite);
+        
+        // Ordenar por data (mais recente primeiro)
+        filtradas.sort((a, b) => new Date(b.data) - new Date(a.data));
+        
+        // Calcular totais
+        let entradas = 0, saidas = 0;
+        filtradas.forEach(m => {
+          if (m.tipo === 'entrada') entradas += m.valor;
+          else saidas += m.valor;
+        });
+        
+        document.getElementById('entradas').textContent = formatarMoeda(entradas);
+        document.getElementById('saidas').textContent = formatarMoeda(saidas);
+        document.getElementById('saldo').textContent = formatarMoeda(entradas - saidas);
+        
+        // Renderizar tabela
+        const tbody = document.getElementById('corpo');
+        
+        if (filtradas.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="empty">Nenhuma movimentação neste período</td></tr>';
+        } else {
+          tbody.innerHTML = filtradas.map(m => `
+            <tr>
+              <td>${formatarData(m.data)}</td>
+              <td><span class="badge ${m.tipo}">${m.tipo === 'entrada' ? '↑ Entrada' : '↓ Saída'}</span></td>
+              <td>${m.descricao || '-'}</td>
+              <td>${m.forma_pagamento || '-'}</td>
+              <td class="${m.tipo}" style="text-align: right; font-weight: 600;">
+                ${m.tipo === 'entrada' ? '+' : '-'} ${formatarMoeda(m.valor)}
+              </td>
+            </tr>
+          `).join('');
+        }
+        
+        // Última atualização
+        document.getElementById('ultima').textContent = new Date().toLocaleTimeString('pt-BR');
+        
+      } catch (erro) {
+        console.error('Erro ao carregar dados:', erro);
+        document.getElementById('corpo').innerHTML = 
+          `<tr><td colspan="5" class="empty" style="color: #e74c3c;">Erro ao carregar dados</td></tr>`;
+      }
+    }
+
+    // Event listeners
+    document.getElementById('filtro').addEventListener('change', carregarDados);
+
+    // Carregar na inicialização
+    carregarDados();
+    
+    // Atualizar a cada 5 segundos
+    setInterval(carregarDados, 5000);
+  </script>
+</body>
+</html>

@@ -652,9 +652,13 @@ class HistoricoView(tk.Frame):
         aba_atual = self.notebook.index(self.notebook.select())
         
         if aba_atual == 0:  # Lançamentos
-            # Buscar lançamentos
-            data_inicio = self.entry_data_inicio.get().strip()
-            data_fim = self.entry_data_fim.get().strip()
+            # Buscar lançamentos - converter datas para formato SQL
+            data_inicio_br = self.entry_data_inicio.get().strip()
+            data_fim_br = self.entry_data_fim.get().strip()
+            
+            data_inicio = self.converter_data_para_iso(data_inicio_br) if data_inicio_br else None
+            data_fim = self.converter_data_para_iso(data_fim_br) if data_fim_br else None
+            
             tipo = self.var_tipo.get() if self.var_tipo.get() != "Todos" else None
             categoria = self.var_categoria.get() if self.var_categoria.get() != "Todas" else None
             
@@ -685,8 +689,12 @@ class HistoricoView(tk.Frame):
             exportar_para_csv(dados_exportar, colunas)
             
         else:  # Caixas
-            data_inicio = self.entry_data_inicio.get().strip()
-            data_fim = self.entry_data_fim.get().strip()
+            data_inicio_br = self.entry_data_inicio.get().strip()
+            data_fim_br = self.entry_data_fim.get().strip()
+            
+            data_inicio = self.converter_data_para_iso(data_inicio_br) if data_inicio_br else None
+            data_fim = self.converter_data_para_iso(data_fim_br) if data_fim_br else None
+            
             caixas = self.db.listar_caixas(data_inicio, data_fim)
             
             if not caixas:
@@ -719,9 +727,13 @@ class HistoricoView(tk.Frame):
         aba_atual = self.notebook.index(self.notebook.select())
         
         if aba_atual == 0:  # Lançamentos
-            # Buscar lançamentos
-            data_inicio = self.entry_data_inicio.get().strip()
-            data_fim = self.entry_data_fim.get().strip()
+            # Buscar lançamentos - converter datas para formato SQL
+            data_inicio_br = self.entry_data_inicio.get().strip()
+            data_fim_br = self.entry_data_fim.get().strip()
+            
+            data_inicio = self.converter_data_para_iso(data_inicio_br) if data_inicio_br else None
+            data_fim = self.converter_data_para_iso(data_fim_br) if data_fim_br else None
+            
             tipo = self.var_tipo.get() if self.var_tipo.get() != "Todos" else None
             categoria = self.var_categoria.get() if self.var_categoria.get() != "Todas" else None
             
@@ -756,8 +768,8 @@ class HistoricoView(tk.Frame):
             
             # Preparar título e resumo
             titulo = "Relatório de Lançamentos"
-            if data_inicio and data_fim:
-                titulo += f" ({data_inicio} a {data_fim})"
+            if data_inicio_br and data_fim_br:
+                titulo += f" ({data_inicio_br} a {data_fim_br})"
             
             resumo = {
                 'Total': f'{len(lancamentos)} lançamentos',
@@ -768,8 +780,12 @@ class HistoricoView(tk.Frame):
             exportar_para_pdf(dados_exportar, colunas, titulo, resumo=resumo)
             
         else:  # Caixas
-            data_inicio = self.entry_data_inicio.get().strip()
-            data_fim = self.entry_data_fim.get().strip()
+            data_inicio_br = self.entry_data_inicio.get().strip()
+            data_fim_br = self.entry_data_fim.get().strip()
+            
+            data_inicio = self.converter_data_para_iso(data_inicio_br) if data_inicio_br else None
+            data_fim = self.converter_data_para_iso(data_fim_br) if data_fim_br else None
+            
             caixas = self.db.listar_caixas(data_inicio, data_fim)
             
             if not caixas:
@@ -793,8 +809,8 @@ class HistoricoView(tk.Frame):
                       'Saídas', 'Saldo Final', 'Status']
             
             titulo = "Relatório de Caixas"
-            if data_inicio and data_fim:
-                titulo += f" ({data_inicio} a {data_fim})"
+            if data_inicio_br and data_fim_br:
+                titulo += f" ({data_inicio_br} a {data_fim_br})"
             
             resumo = {'Total': f'{len(caixas)} caixas'}
             

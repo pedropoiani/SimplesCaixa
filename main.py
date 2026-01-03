@@ -108,7 +108,8 @@ class PDVApp(tk.Tk):
             self.container,
             self.db,
             self.fechar_aplicacao,
-            self.caixa_aberto
+            self.caixa_aberto,
+            self.mostrar_historico
         )
         self.frame_atual.pack(fill=tk.BOTH, expand=True)
     
@@ -152,7 +153,7 @@ class PDVApp(tk.Tk):
         self.frame_atual = HistoricoView(
             self.container,
             self.db,
-            self.mostrar_principal
+            self.voltar_principal_ou_abertura
         )
         self.frame_atual.pack(fill=tk.BOTH, expand=True)
     
