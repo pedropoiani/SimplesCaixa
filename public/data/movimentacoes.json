@@ -12,7 +12,15 @@
       "descricao": "Venda teste",
       "forma_pagamento": "PIX",
       "data": "2026-01-02 23:12:25"
+    },
+    {
+      "id": 2,
+      "tipo": "entrada",
+      "valor": 25.5,
+      "descricao": "TESTE AUTOMATICO",
+      "forma_pagamento": "Dinheiro",
+      "data": "2026-01-02 23:21:16"
     }
   ],
-  "ultima_atualizacao": "2026-01-02 23:12:25"
+  "ultima_atualizacao": "2026-01-02 23:21:16"
 }
