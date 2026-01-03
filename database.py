@@ -9,6 +9,13 @@ import os
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 
+# Importar sincronização JSON (opcional)
+try:
+    from salvar_json import abrir_caixa_json, fechar_caixa_json, registrar_movimentacao
+    SYNC_JSON_DISPONIVEL = True
+except ImportError:
+    SYNC_JSON_DISPONIVEL = False
+
 class Database:
     """Classe para gerenciar o banco de dados SQLite"""
     
@@ -265,6 +272,13 @@ class Database:
         self.registrar_log("Abertura de Caixa", 
                           f"Troco inicial: R$ {troco_inicial:.2f}", operador)
         
+        # Sincronizar com JSON/GitHub
+        if SYNC_JSON_DISPONIVEL:
+            try:
+                abrir_caixa_json(troco_inicial, operador)
+            except Exception as e:
+                print(f"Erro ao sincronizar abertura de caixa: {e}")
+        
         return caixa_id
     
     def obter_caixa_aberto(self) -> Optional[Dict]:
@@ -336,6 +350,13 @@ class Database:
         self.registrar_log("Fechamento de Caixa", 
                           f"Saldo final: R$ {saldo_final:.2f}", operador)
         
+        # Sincronizar com JSON/GitHub
+        if SYNC_JSON_DISPONIVEL:
+            try:
+                fechar_caixa_json()
+            except Exception as e:
+                print(f"Erro ao sincronizar fechamento de caixa: {e}")
+        
         return {
             'troco_inicial': caixa['troco_inicial'],
             'total_entradas': total_entradas,
@@ -364,6 +385,21 @@ class Database:
         # Registrar log
         self.registrar_log(f"Lançamento - {tipo}", 
                           f"{categoria}: R$ {valor:.2f}", operador)
+        
+        # Sincronizar com JSON/GitHub
+        if SYNC_JSON_DISPONIVEL:
+            try:
+                # Buscar nome da forma de pagamento
+                fp_nome = ""
+                if forma_pagamento_id:
+                    fp = cursor.execute("SELECT nome FROM formas_pagamento WHERE id = ?", (forma_pagamento_id,)).fetchone()
+                    fp_nome = fp[0] if fp else ""
+                
+                # Registrar movimentação
+                descricao = f"{categoria}" + (f" - {observacao}" if observacao else "")
+                registrar_movimentacao(tipo, valor, descricao, fp_nome)
+            except Exception as e:
+                print(f"Erro ao sincronizar lançamento: {e}")
         
         return lancamento_id
     
