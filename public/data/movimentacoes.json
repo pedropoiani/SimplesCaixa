@@ -4,6 +4,15 @@
     "operador": "Pedro",
     "data_abertura": "2026-01-02 23:12:22"
   },
-  "movimentacoes": [],
-  "ultima_atualizacao": "2026-01-02 23:12:22"
+  "movimentacoes": [
+    {
+      "id": 1,
+      "tipo": "entrada",
+      "valor": 50.0,
+      "descricao": "Venda teste",
+      "forma_pagamento": "PIX",
+      "data": "2026-01-02 23:12:25"
+    }
+  ],
+  "ultima_atualizacao": "2026-01-02 23:12:25"
 }
