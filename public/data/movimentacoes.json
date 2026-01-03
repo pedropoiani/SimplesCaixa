@@ -28,7 +28,15 @@
       "descricao": "TESTE NOVO TOKEN",
       "forma_pagamento": "PIX",
       "data": "2026-01-02 23:28:16"
+    },
+    {
+      "id": 4,
+      "tipo": "Entrada",
+      "valor": 10.0,
+      "descricao": "Venda",
+      "forma_pagamento": "Cartão Crédito",
+      "data": "2026-01-02 23:47:13"
     }
   ],
-  "ultima_atualizacao": "2026-01-02 23:28:16"
+  "ultima_atualizacao": "2026-01-02 23:47:13"
 }
