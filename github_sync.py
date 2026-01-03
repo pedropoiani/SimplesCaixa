@@ -12,12 +12,13 @@ import os
 from datetime import datetime
 
 # ============================================
-# CONFIGURAÇÃO - PREENCHA COM SEUS DADOS
+# CONFIGURAÇÃO - NÃO COLOQUE O TOKEN AQUI!
+# Use o arquivo .github_config.json (local)
 # ============================================
-GITHUB_TOKEN = "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"  # Seu Personal Access Token
-GITHUB_OWNER = "pedropoiani"  # Seu usuário do GitHub (ex: "pedropoiani")
-GITHUB_REPO = "SimplesCaixa"   # Nome do repositório (ex: "pdvMF")
-GITHUB_BRANCH = "caixa-loja"  # Branch do repositório
+GITHUB_TOKEN = ""  # Deixe vazio - use configurar_github()
+GITHUB_OWNER = ""  # Deixe vazio - use configurar_github()
+GITHUB_REPO = ""   # Deixe vazio - use configurar_github()
+GITHUB_BRANCH = "" # Deixe vazio - use configurar_github()
 # ============================================
 
 # Caminho do arquivo no repositório
