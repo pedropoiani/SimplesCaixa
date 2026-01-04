@@ -104,3 +104,45 @@ async function salvarConfiguracao(event) {
         mostrarErro('Erro ao salvar configurações');
     }
 }
+
+async function testarNotificacao(tipo) {
+    const resultadoDiv = document.getElementById('resultadoTeste');
+    resultadoDiv.innerHTML = '<p class="text-info">⏳ Enviando notificação de teste...</p>';
+    
+    try {
+        const response = await fetch('/api/push/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tipo: tipo })
+        });
+        
+        const resultado = await response.json();
+        
+        if (resultado.success) {
+            resultadoDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <strong>✅ Sucesso!</strong><br>
+                    ${resultado.message}<br>
+                    <small>Enviadas: ${resultado.resultado.enviados} | Expiradas: ${resultado.resultado.expirados} | Total: ${resultado.resultado.total}</small>
+                </div>
+            `;
+        } else {
+            resultadoDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <strong>❌ Erro!</strong><br>
+                    ${resultado.message}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erro ao testar notificação:', error);
+        resultadoDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>❌ Erro!</strong><br>
+                Não foi possível enviar a notificação de teste.
+            </div>
+        `;
+    }
+}

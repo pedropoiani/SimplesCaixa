@@ -602,16 +602,48 @@ def atualizar_config_subscription(id):
 @api_bp.route('/push/test', methods=['POST'])
 def testar_push():
     """Enviar notificação de teste"""
-    resultado = enviar_para_todos(
-        db, PushSubscription,
-        '🔔 Teste de Notificação',
-        'As notificações estão funcionando corretamente!',
-        'geral'
-    )
+    data = request.json or {}
+    tipo_teste = data.get('tipo', 'geral')
+    
+    if tipo_teste == 'sangria':
+        resultado = notificar_sangria(
+            db, PushSubscription, 
+            valor=150.00, 
+            motivo='Teste de notificação de sangria'
+        )
+    elif tipo_teste == 'abertura':
+        resultado = notificar_abertura(
+            db, PushSubscription,
+            operador='Operador de Teste',
+            troco_inicial=100.00
+        )
+    elif tipo_teste == 'fechamento':
+        resultado = notificar_fechamento(
+            db, PushSubscription,
+            total_vendas=1250.50,
+            diferenca=0.00
+        )
+    elif tipo_teste == 'resumo_diario':
+        resultado = notificar_resumo_diario(
+            db, PushSubscription,
+            resumo={
+                'total_vendas': 1250.50,
+                'total_sangrias': 150.00,
+                'lucro_liquido': 350.00,
+                'total_transacoes': 45
+            }
+        )
+    else:  # geral
+        resultado = enviar_para_todos(
+            db, PushSubscription,
+            '🔔 Teste de Notificação',
+            'As notificações estão funcionando corretamente!',
+            'geral'
+        )
     
     return jsonify({
         'success': True,
-        'message': f'Enviado para {resultado["enviados"]} dispositivos',
+        'message': f'Teste de {tipo_teste}: Enviado para {resultado["enviados"]} dispositivos',
         'resultado': resultado
     })
 
