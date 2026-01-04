@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Painel de Caixa - PDV-MF{% endblock %}
+
+{% block content %}
+<div class="pdv-container">
+    <!-- Caixa Fechado -->
+    <div id="caixaFechado" class="caixa-fechado-overlay" style="display: none;">
+        <div class="caixa-fechado-content">
+            <div class="caixa-fechado-icon">🔒</div>
+            <h2>Caixa Fechado</h2>
+            <p>Clique no botão abaixo para iniciar o expediente</p>
+            <button onclick="modalAbrirCaixa()" class="btn-pdv btn-abrir-caixa">
+                🔓 ABRIR CAIXA
+            </button>
+        </div>
+    </div>
+
+    <!-- Caixa Aberto -->
+    <div id="caixaAberto" style="display: none;">
+        <!-- Painel Superior - Resumo -->
+        <div class="painel-superior">
+            <div class="painel-info-loja">
+                <h1 id="nomeLoja">PDV-MF</h1>
+                <span class="operador-info">Operador: <span id="nomeOperador">-</span></span>
+            </div>
+            <div class="painel-valores">
+                <div class="valor-box saldo">
+                    <span class="valor-label">SALDO</span>
+                    <span class="valor-numero" id="saldoAtual">R$ 0,00</span>
+                </div>
+                <div class="valor-box entradas">
+                    <span class="valor-label">ENTRADAS</span>
+                    <span class="valor-numero" id="totalEntradas">R$ 0,00</span>
+                </div>
+                <div class="valor-box saidas">
+                    <span class="valor-label">SAÍDAS</span>
+                    <span class="valor-numero" id="totalSaidas">R$ 0,00</span>
+                </div>
+                <div class="valor-box troco">
+                    <span class="valor-label">TROCO INICIAL</span>
+                    <span class="valor-numero" id="trocoInicial">R$ 0,00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área Principal -->
+        <div class="area-principal">
+            <!-- Botões de Operação -->
+            <div class="botoes-operacao">
+                <button class="btn-operacao venda" onclick="modalVenda()">
+                    <span class="btn-icon">💳</span>
+                    <span class="btn-texto">VENDA</span>
+                </button>
+                <button class="btn-operacao sangria" onclick="modalSangria()">
+                    <span class="btn-icon">💸</span>
+                    <span class="btn-texto">SANGRIA</span>
+                </button>
+                <button class="btn-operacao suprimento" onclick="modalSuprimento()">
+                    <span class="btn-icon">💰</span>
+                    <span class="btn-texto">SUPRIMENTO</span>
+                </button>
+                <button class="btn-operacao outros" onclick="modalOutros()">
+                    <span class="btn-icon">📝</span>
+                    <span class="btn-texto">OUTROS</span>
+                </button>
+            </div>
+
+            <!-- Últimos Lançamentos -->
+            <div class="ultimos-lancamentos">
+                <div class="lancamentos-header">
+                    <h3>📋 Últimos Lançamentos</h3>
+                    <button onclick="carregarUltimosLancamentos()" class="btn-refresh">🔄</button>
+                </div>
+                <div id="listaLancamentos" class="lista-lancamentos">
+                    <p class="text-center">Nenhum lançamento ainda</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Fechar Caixa -->
+        <div class="rodape-caixa">
+            <button onclick="modalFecharCaixa()" class="btn-fechar-caixa">
+                🔒 FECHAR CAIXA
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/caixa.js') }}"></script>
+{% endblock %}

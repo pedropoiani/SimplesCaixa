@@ -1,0 +1,30 @@
+# Serviço systemd para PDV-MF
+# Copie para: /etc/systemd/system/pdv-mf.service
+# Ative: sudo systemctl enable pdv-mf
+# Inicie: sudo systemctl start pdv-mf
+# Status: sudo systemctl status pdv-mf
+# Logs: sudo journalctl -u pdv-mf -f
+
+[Unit]
+Description=PDV-MF Web Application
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/pdv-mf
+Environment="PATH=/opt/pdv-mf/venv/bin"
+ExecStart=/opt/pdv-mf/venv/bin/gunicorn --bind 127.0.0.1:5000 --workers 2 --timeout 120 run:app
+
+# Restart automaticamente se cair
+Restart=always
+RestartSec=10
+
+# Logs
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=pdv-mf
+
+[Install]
+WantedBy=multi-user.target

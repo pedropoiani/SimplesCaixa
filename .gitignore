@@ -1,0 +1,99 @@
+# Ambientes Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+.Python
+
+# Flask
+instance/
+*.db
+.webassets-cache
+.flask_session/
+
+# Banco de dados - CRÍTICO: Nunca commitar
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+data/
+instance/*.db
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Sistemas Operacionais
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs - CRÍTICO: Podem conter informações sensíveis
+*.log
+logs/
+*.log.*
+
+# Variáveis de ambiente - CRÍTICO: Contém senhas e chaves
+.env
+.env.*
+.env.local
+.env.production
+.env.development
+!.env.example
+
+# Chaves e Certificados - CRÍTICO
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+vapid_private.pem
+vapid_public.pem
+
+# Backups do banco de dados
+*.backup
+*.bak
+backup/
+backups/
+
+# Arquivos temporários
+*.tmp
+*.temp
+.cache/
+tmp/
+
+# Build e distribuição
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Docker (volumes locais)
+docker-compose.override.yml
+
+# Uploads de usuários (se houver)
+uploads/
+media/
+
+# Configurações locais específicas
+pdv-mf.service
+nginx.conf
+!nginx.conf.example
+!pdv-mf.service.example

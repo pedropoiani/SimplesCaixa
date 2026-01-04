@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico - PDV-MF{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2>📊 Histórico e Relatórios</h2>
+        </div>
+        <div class="card-body">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="mostrarTabHistorico('lancamentos')">
+                    📝 Lançamentos
+                </button>
+                <button class="tab-btn" onclick="mostrarTabHistorico('caixas')">
+                    💰 Caixas
+                </button>
+                <button class="tab-btn" onclick="mostrarTabHistorico('relatorio')">
+                    📈 Relatório
+                </button>
+            </div>
+
+            <!-- Tab Lançamentos -->
+            <div id="tab-historico-lancamentos" class="tab-content active">
+                <div class="filtros">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Período</label>
+                            <select id="filtroLancPeriodo" class="form-control" onchange="aplicarFiltroLancamentos()">
+                                <option value="hoje">Hoje</option>
+                                <option value="7dias">Últimos 7 dias</option>
+                                <option value="30dias">Últimos 30 dias</option>
+                                <option value="customizado">Personalizado</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="filtroLancDatasCustom" style="display: none;">
+                            <label>Data Início</label>
+                            <input type="date" id="filtroLancDataInicio" class="form-control">
+                        </div>
+                        <div class="form-group" id="filtroLancDatasCustom2" style="display: none;">
+                            <label>Data Fim</label>
+                            <input type="date" id="filtroLancDataFim" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select id="filtroLancTipo" class="form-control" onchange="aplicarFiltroLancamentos()">
+                                <option value="">Todos</option>
+                                <option value="entrada">Entradas</option>
+                                <option value="saida">Saídas</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoria</label>
+                            <select id="filtroLancCategoria" class="form-control" onchange="aplicarFiltroLancamentos()">
+                                <option value="">Todas</option>
+                                <option value="venda">Venda</option>
+                                <option value="sangria">Sangria</option>
+                                <option value="suprimento">Suprimento</option>
+                                <option value="despesa">Despesa</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button onclick="aplicarFiltroLancamentos()" class="btn btn-primary">
+                            🔍 Buscar
+                        </button>
+                        <button onclick="exportarLancamentosCSV()" class="btn btn-success">
+                            📥 Exportar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultadosLancamentos" class="resultados">
+                    <p class="text-center">Selecione os filtros e clique em Buscar</p>
+                </div>
+            </div>
+
+            <!-- Tab Caixas -->
+            <div id="tab-historico-caixas" class="tab-content">
+                <div class="filtros">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="filtroCaixaStatus" class="form-control" onchange="listarCaixas()">
+                                <option value="">Todos</option>
+                                <option value="aberto">Aberto</option>
+                                <option value="fechado">Fechado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button onclick="listarCaixas()" class="btn btn-primary">
+                            🔍 Buscar
+                        </button>
+                        <button onclick="exportarCaixasCSV()" class="btn btn-success">
+                            📥 Exportar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultadosCaixas" class="resultados">
+                    <p class="text-center">Clique em Buscar para ver os caixas</p>
+                </div>
+            </div>
+
+            <!-- Tab Relatório -->
+            <div id="tab-historico-relatorio" class="tab-content">
+                <div class="filtros">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data Início *</label>
+                            <input type="date" id="relatorioDataInicio" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Data Fim *</label>
+                            <input type="date" id="relatorioDataFim" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button onclick="gerarRelatorio()" class="btn btn-primary">
+                            📊 Gerar Relatório
+                        </button>
+                    </div>
+                </div>
+
+                <div id="resultadoRelatorio" class="resultados">
+                    <!-- Relatório será exibido aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/historico.js') }}"></script>
+{% endblock %}

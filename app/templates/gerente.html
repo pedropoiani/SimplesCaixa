@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a5fb4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>📊 Gerente - PDV-MF</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <style>
+        /* Reset e Base Mobile */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        /* Header Mobile */
+        .mobile-header {
+            background: linear-gradient(135deg, #1a5fb4, #0d4a8f);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        }
+        
+        .mobile-header h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .mobile-header .subtitle {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        
+        .header-btn {
+            flex: 1;
+            padding: 0.6rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+        
+        .header-btn.primary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        
+        .header-btn.success {
+            background: #26a269;
+            color: white;
+        }
+        
+        .header-btn.danger {
+            background: #c01c28;
+            color: white;
+        }
+        
+        /* Status do Caixa */
+        .caixa-status-card {
+            margin: 1rem;
+            padding: 1rem;
+            border-radius: 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .caixa-status-card.aberto {
+            background: linear-gradient(135deg, rgba(38, 162, 105, 0.2), rgba(38, 162, 105, 0.1));
+            border-color: #26a269;
+        }
+        
+        .caixa-status-card.fechado {
+            background: linear-gradient(135deg, rgba(192, 28, 40, 0.2), rgba(192, 28, 40, 0.1));
+            border-color: #c01c28;
+        }
+        
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.aberto { background: #26a269; }
+        .status-dot.fechado { background: #c01c28; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        /* Cards de Resumo */
+        .resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin: 1rem;
+        }
+        
+        .resumo-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .resumo-card.destaque {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #1a5fb4, #0d4a8f);
+            border: none;
+        }
+        
+        .resumo-card .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 0.5rem;
+        }
+        
+        .resumo-card .valor {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .resumo-card.destaque .valor {
+            font-size: 2rem;
+        }
+        
+        .resumo-card.positivo .valor { color: #26a269; }
+        .resumo-card.negativo .valor { color: #c01c28; }
+        
+        /* Vendas por Forma */
+        .vendas-forma {
+            margin: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 1rem;
+        }
+        
+        .vendas-forma h3 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .forma-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .forma-item:last-child {
+            border-bottom: none;
+        }
+        
+        .forma-nome {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .forma-valor {
+            font-weight: 600;
+            color: #26a269;
+        }
+        
+        /* Últimas Movimentações */
+        .movimentacoes {
+            margin: 1rem;
+        }
+        
+        .movimentacoes h3 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .mov-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .mov-item.entrada {
+            border-left: 3px solid #26a269;
+        }
+        
+        .mov-item.saida {
+            border-left: 3px solid #c01c28;
+        }
+        
+        .mov-info {
+            flex: 1;
+        }
+        
+        .mov-categoria {
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .mov-descricao {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 0.15rem;
+        }
+        
+        .mov-hora {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .mov-valor {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        
+        .mov-valor.entrada { color: #26a269; }
+        .mov-valor.saida { color: #c01c28; }
+        
+        /* Gráfico Semanal Simples */
+        .grafico-semana {
+            margin: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 1rem;
+        }
+        
+        .grafico-semana h3 {
+            margin: 0 0 1rem 0;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .barras {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            height: 120px;
+        }
+        
+        .barra-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+        }
+        
+        .barra {
+            width: 100%;
+            background: linear-gradient(to top, #1a5fb4, #26a269);
+            border-radius: 5px 5px 0 0;
+            min-height: 5px;
+            transition: height 0.3s;
+        }
+        
+        .barra-label {
+            font-size: 0.65rem;
+            margin-top: 0.35rem;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        .barra-valor {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 0.15rem;
+        }
+        
+        /* Notificações Push */
+        .notif-section {
+            margin: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 1rem;
+        }
+        
+        .notif-section h3 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .notif-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .notif-toggle:last-child {
+            border-bottom: none;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #26a269;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+        
+        /* Botões de Ação */
+        .acoes-rapidas {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin: 1rem;
+        }
+        
+        .acao-btn {
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .acao-btn span:first-child {
+            font-size: 1.5rem;
+        }
+        
+        .acao-btn.pdf {
+            background: linear-gradient(135deg, #e66100, #c64b00);
+            color: white;
+        }
+        
+        .acao-btn.refresh {
+            background: linear-gradient(135deg, #1a5fb4, #0d4a8f);
+            color: white;
+        }
+        
+        .acao-btn.notif {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+        }
+        
+        .acao-btn.voltar {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: rgba(255,255,255,0.5);
+        }
+        
+        .loading-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #1a5fb4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Footer */
+        .mobile-footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.4);
+        }
+        
+        /* Notificação Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            animation: slideUp 0.3s, fadeOut 0.3s 2.7s;
+        }
+        
+        .toast.success { background: #26a269; }
+        .toast.error { background: #c01c28; }
+        
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100%); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="mobile-header">
+        <h1>📊 Painel do Gerente</h1>
+        <div class="subtitle" id="dataAtual"></div>
+        <div class="header-actions">
+            <button class="header-btn primary" onclick="atualizarDados()">🔄 Atualizar</button>
+            <button class="header-btn success" onclick="baixarPDF()">📥 PDF</button>
+            <a href="/" class="header-btn danger" style="text-decoration: none;">🏠 Caixa</a>
+        </div>
+    </header>
+    
+    <!-- Status do Caixa -->
+    <div id="caixaStatusCard" class="caixa-status-card">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            Carregando...
+        </div>
+    </div>
+    
+    <!-- Resumo do Dia -->
+    <div class="resumo-grid" id="resumoGrid">
+        <!-- Preenchido via JS -->
+    </div>
+    
+    <!-- Vendas por Forma -->
+    <div class="vendas-forma" id="vendasForma">
+        <h3>💳 Vendas por Forma de Pagamento</h3>
+        <div id="formasPagamento">
+            <div class="loading">Carregando...</div>
+        </div>
+    </div>
+    
+    <!-- Gráfico Semanal -->
+    <div class="grafico-semana">
+        <h3>📈 Últimos 7 Dias</h3>
+        <div class="barras" id="graficoSemana">
+            <div class="loading">Carregando...</div>
+        </div>
+    </div>
+    
+    <!-- Últimas Movimentações -->
+    <div class="movimentacoes">
+        <h3>📋 Últimas Movimentações</h3>
+        <div id="listaMovimentacoes">
+            <div class="loading">Carregando...</div>
+        </div>
+    </div>
+    
+    <!-- Notificações -->
+    <div class="notif-section">
+        <h3>🔔 Notificações Push</h3>
+        <div id="notifStatus">
+            <button class="acao-btn notif" style="width: 100%;" onclick="ativarNotificacoes()">
+                <span>🔔</span>
+                <span>Ativar Notificações</span>
+            </button>
+        </div>
+        <div id="notifConfig" style="display: none;">
+            <div class="notif-toggle">
+                <span>💸 Sangrias</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleSangria" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="notif-toggle">
+                <span>🔓 Abertura de Caixa</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleAbertura" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="notif-toggle">
+                <span>🔒 Fechamento de Caixa</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleFechamento" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="notif-toggle">
+                <span>📊 Resumo Diário</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleResumo" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <button class="acao-btn" style="width: 100%; margin-top: 0.75rem; background: rgba(255,255,255,0.1);" onclick="testarNotificacao()">
+                🔔 Testar Notificação
+            </button>
+        </div>
+    </div>
+    
+    <!-- Ações Rápidas -->
+    <div class="acoes-rapidas">
+        <button class="acao-btn pdf" onclick="baixarPDF()">
+            <span>📄</span>
+            <span>Baixar PDF</span>
+        </button>
+        <button class="acao-btn refresh" onclick="enviarResumo()">
+            <span>📤</span>
+            <span>Enviar Resumo</span>
+        </button>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="mobile-footer">
+        <p>PDV-MF © 2026 - Painel do Gerente</p>
+        <p>Última atualização: <span id="ultimaAtualizacao">--</span></p>
+    </footer>
+    
+    <script>
+        // ===== VARIÁVEIS GLOBAIS =====
+        let dadosResumo = null;
+        let vapidPublicKey = null;
+        let swRegistration = null;
+        
+        // ===== INICIALIZAÇÃO =====
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Data atual
+            const hoje = new Date();
+            document.getElementById('dataAtual').textContent = 
+                hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            
+            // Carregar dados
+            await atualizarDados();
+            
+            // Verificar suporte a push
+            verificarSuportePush();
+            
+            // Auto-refresh a cada 30 segundos
+            setInterval(atualizarDados, 30000);
+        });
+        
+        // ===== FUNÇÕES DE DADOS =====
+        async function atualizarDados() {
+            try {
+                await Promise.all([
+                    carregarResumoHoje(),
+                    carregarSemana(),
+                    carregarMovimentacoes()
+                ]);
+                
+                document.getElementById('ultimaAtualizacao').textContent = 
+                    new Date().toLocaleTimeString('pt-BR');
+                    
+            } catch (error) {
+                console.error('Erro ao atualizar dados:', error);
+                mostrarToast('Erro ao carregar dados', 'error');
+            }
+        }
+        
+        async function carregarResumoHoje() {
+            const response = await fetch('/api/gerente/resumo-hoje');
+            const data = await response.json();
+            
+            if (data.success) {
+                dadosResumo = data;
+                renderizarStatus(data);
+                renderizarResumo(data);
+                renderizarFormasPagamento(data.vendas);
+            }
+        }
+        
+        async function carregarSemana() {
+            const response = await fetch('/api/gerente/resumo-semana');
+            const data = await response.json();
+            
+            if (data.success) {
+                renderizarGrafico(data.dias);
+            }
+        }
+        
+        async function carregarMovimentacoes() {
+            const response = await fetch('/api/gerente/ultimas-movimentacoes?limite=10');
+            const data = await response.json();
+            
+            if (data.success) {
+                renderizarMovimentacoes(data.lancamentos);
+            }
+        }
+        
+        // ===== FUNÇÕES DE RENDERIZAÇÃO =====
+        function renderizarStatus(data) {
+            const card = document.getElementById('caixaStatusCard');
+            const aberto = data.caixa_aberto;
+            
+            card.className = `caixa-status-card ${aberto ? 'aberto' : 'fechado'}`;
+            card.innerHTML = `
+                <div class="status-header">
+                    <div class="status-badge">
+                        <span class="status-dot ${aberto ? 'aberto' : 'fechado'}"></span>
+                        <span>Caixa ${aberto ? 'ABERTO' : 'FECHADO'}</span>
+                    </div>
+                    <span>${aberto && data.caixa_atual ? data.caixa_atual.operador || 'Sem operador' : ''}</span>
+                </div>
+                ${aberto && data.caixa_atual ? `
+                    <div style="font-size: 0.8rem; color: rgba(255,255,255,0.7);">
+                        Aberto às ${new Date(data.caixa_atual.data_abertura).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}
+                        • Troco: ${formatarMoeda(data.caixa_atual.troco_inicial)}
+                    </div>
+                ` : ''}
+            `;
+        }
+        
+        function renderizarResumo(data) {
+            const grid = document.getElementById('resumoGrid');
+            
+            grid.innerHTML = `
+                <div class="resumo-card destaque">
+                    <div class="label">💰 Total de Vendas Hoje</div>
+                    <div class="valor">${formatarMoeda(data.total_vendas)}</div>
+                </div>
+                <div class="resumo-card positivo">
+                    <div class="label">📦 Qtd. Lançamentos</div>
+                    <div class="valor">${data.qtd_lancamentos}</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label">📂 Caixas Hoje</div>
+                    <div class="valor">${data.qtd_caixas}</div>
+                </div>
+                <div class="resumo-card positivo">
+                    <div class="label">⬆️ Suprimentos</div>
+                    <div class="valor">${formatarMoeda(data.movimentacoes.suprimentos)}</div>
+                </div>
+                <div class="resumo-card negativo">
+                    <div class="label">⬇️ Sangrias</div>
+                    <div class="valor">${formatarMoeda(data.movimentacoes.sangrias)}</div>
+                </div>
+            `;
+        }
+        
+        function renderizarFormasPagamento(vendas) {
+            const container = document.getElementById('formasPagamento');
+            
+            const formas = [
+                { nome: 'Dinheiro', emoji: '💵', valor: vendas.dinheiro },
+                { nome: 'PIX', emoji: '📱', valor: vendas.pix },
+                { nome: 'Cartão Crédito', emoji: '💳', valor: vendas.cartao_credito },
+                { nome: 'Cartão Débito', emoji: '💳', valor: vendas.cartao_debito }
+            ].filter(f => f.valor > 0);
+            
+            if (formas.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.5); padding: 1rem;">Nenhuma venda hoje</div>';
+                return;
+            }
+            
+            container.innerHTML = formas.map(f => `
+                <div class="forma-item">
+                    <span class="forma-nome">${f.emoji} ${f.nome}</span>
+                    <span class="forma-valor">${formatarMoeda(f.valor)}</span>
+                </div>
+            `).join('');
+        }
+        
+        function renderizarGrafico(dias) {
+            const container = document.getElementById('graficoSemana');
+            const maxValor = Math.max(...dias.map(d => d.total), 1);
+            
+            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            
+            container.innerHTML = dias.map(d => {
+                const altura = (d.total / maxValor) * 100;
+                const data = new Date(d.data + 'T12:00:00');
+                const diaSemana = diasSemana[data.getDay()];
+                
+                return `
+                    <div class="barra-container">
+                        <div class="barra" style="height: ${Math.max(altura, 5)}%;"></div>
+                        <div class="barra-label">${diaSemana}</div>
+                        <div class="barra-valor">${formatarMoedaCurto(d.total)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderizarMovimentacoes(lancamentos) {
+            const container = document.getElementById('listaMovimentacoes');
+            
+            if (lancamentos.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.5); padding: 1rem;">Nenhuma movimentação</div>';
+                return;
+            }
+            
+            container.innerHTML = lancamentos.map(l => {
+                const hora = new Date(l.data_hora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+                const emoji = l.categoria === 'venda' ? '🛒' : 
+                             l.categoria === 'sangria' ? '💸' : 
+                             l.categoria === 'suprimento' ? '💰' : '📋';
+                
+                return `
+                    <div class="mov-item ${l.tipo}">
+                        <div class="mov-info">
+                            <div class="mov-categoria">${emoji} ${l.categoria.charAt(0).toUpperCase() + l.categoria.slice(1)}</div>
+                            <div class="mov-descricao">${l.descricao || l.forma_pagamento || '-'}</div>
+                            <div class="mov-hora">${hora}</div>
+                        </div>
+                        <div class="mov-valor ${l.tipo}">
+                            ${l.tipo === 'saida' ? '-' : '+'}${formatarMoeda(l.valor)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ===== FUNÇÕES DE NOTIFICAÇÃO PUSH =====
+        async function verificarSuportePush() {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                document.getElementById('notifStatus').innerHTML = 
+                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">Notificações não suportadas neste navegador</div>';
+                return;
+            }
+            
+            try {
+                // Buscar chave VAPID
+                const response = await fetch('/api/push/vapid-public-key');
+                const data = await response.json();
+                if (data.success) {
+                    vapidPublicKey = data.publicKey;
+                }
+                
+                // Registrar service worker
+                swRegistration = await navigator.serviceWorker.register('/static/js/sw.js');
+                
+                // Verificar se já está inscrito
+                const subscription = await swRegistration.pushManager.getSubscription();
+                if (subscription) {
+                    document.getElementById('notifStatus').style.display = 'none';
+                    document.getElementById('notifConfig').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erro ao configurar push:', error);
+            }
+        }
+        
+        async function ativarNotificacoes() {
+            try {
+                const permission = await Notification.requestPermission();
+                
+                if (permission !== 'granted') {
+                    mostrarToast('Permissão negada', 'error');
+                    return;
+                }
+                
+                // Criar subscrição
+                const subscription = await swRegistration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+                });
+                
+                // Enviar para o servidor
+                const response = await fetch('/api/push/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subscription: subscription.toJSON(),
+                        nome_dispositivo: 'Dispositivo do Gerente'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarToast('Notificações ativadas!', 'success');
+                    document.getElementById('notifStatus').style.display = 'none';
+                    document.getElementById('notifConfig').style.display = 'block';
+                } else {
+                    mostrarToast('Erro ao ativar', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao ativar notificações:', error);
+                mostrarToast('Erro ao ativar notificações', 'error');
+            }
+        }
+        
+        async function testarNotificacao() {
+            try {
+                const response = await fetch('/api/push/test', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarToast(`Enviado para ${data.resultado.enviados} dispositivos`, 'success');
+                }
+            } catch (error) {
+                mostrarToast('Erro ao enviar teste', 'error');
+            }
+        }
+        
+        // ===== FUNÇÕES DE PDF =====
+        function baixarPDF() {
+            const hoje = new Date().toISOString().split('T')[0];
+            window.open(`/api/relatorio/resumo-diario/pdf?data=${hoje}`, '_blank');
+        }
+        
+        async function enviarResumo() {
+            try {
+                const response = await fetch('/api/gerente/enviar-resumo-diario', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarToast('Resumo enviado!', 'success');
+                }
+            } catch (error) {
+                mostrarToast('Erro ao enviar resumo', 'error');
+            }
+        }
+        
+        // ===== UTILIDADES =====
+        function formatarMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(valor || 0);
+        }
+        
+        function formatarMoedaCurto(valor) {
+            if (valor >= 1000) {
+                return (valor / 1000).toFixed(1) + 'k';
+            }
+            return valor.toFixed(0);
+        }
+        
+        function mostrarToast(mensagem, tipo = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${tipo}`;
+            toast.textContent = mensagem;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding)
+                .replace(/-/g, '+')
+                .replace(/_/g, '/');
+            
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+    </script>
+</body>
+</html>

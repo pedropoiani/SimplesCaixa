@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PDV Sistema de Caixa{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <h1>💰 PDV-MF</h1>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                    🏠 Caixa
+                </a>
+                <a href="/historico" class="nav-link {% if request.path == '/historico' %}active{% endif %}">
+                    📊 Histórico
+                </a>
+                <a href="/configuracoes" class="nav-link {% if request.path == '/configuracoes' %}active{% endif %}">
+                    ⚙️ Configurações
+                </a>
+                <a href="/gerente" class="nav-link {% if request.path == '/gerente' %}active{% endif %}" title="Painel do Gerente">
+                    👤 Gerente
+                </a>
+            </div>
+            <div class="nav-status">
+                <div id="caixaStatus" class="status-badge">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>PDV-MF &copy; 2026 - Sistema de Controle de Caixa</p>
+    </footer>
+
+    <!-- Modals Container -->
+    <div id="modalsContainer"></div>
+
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    <script>
+        // Atualizar status do caixa no navbar
+        async function atualizarStatusCaixa() {
+            try {
+                const status = await API.caixaStatus();
+                const statusBadge = document.getElementById('caixaStatus');
+                
+                if (status.aberto) {
+                    statusBadge.className = 'status-badge status-open';
+                    statusBadge.querySelector('.status-text').textContent = 'Caixa Aberto';
+                } else {
+                    statusBadge.className = 'status-badge status-closed';
+                    statusBadge.querySelector('.status-text').textContent = 'Caixa Fechado';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar status do caixa:', error);
+            }
+        }
+        
+        // Atualizar a cada 30 segundos
+        atualizarStatusCaixa();
+        setInterval(atualizarStatusCaixa, 30000);
+    </script>
+</body>
+</html>

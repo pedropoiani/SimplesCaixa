@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações - PDV-MF{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2>⚙️ Configurações do Sistema</h2>
+        </div>
+        <div class="card-body">
+            <form id="formConfiguracao" onsubmit="salvarConfiguracao(event)">
+                <div class="form-group">
+                    <label>Nome da Loja *</label>
+                    <input type="text" id="configNomeLoja" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Responsável *</label>
+                    <input type="text" id="configResponsavel" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Formas de Pagamento</label>
+                    <div id="formasPagamentoLista" class="formas-pagamento-lista">
+                        <!-- Lista será carregada dinamicamente -->
+                    </div>
+                    <div class="input-group mt-2">
+                        <input type="text" id="novaFormaPagamento" class="form-control" placeholder="Nova forma de pagamento">
+                        <button type="button" onclick="adicionarFormaPagamento()" class="btn btn-secondary">
+                            ➕ Adicionar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-success btn-large">
+                        💾 Salvar Configurações
+                    </button>
+                </div>
+            </form>
+
+            <hr>
+
+            <div class="info-section">
+                <h3>ℹ️ Informações do Sistema</h3>
+                <p><strong>Versão:</strong> 2.0.0 Web</p>
+                <p><strong>Banco de Dados:</strong> SQLite/PostgreSQL</p>
+                <p><strong>Localização dos Dados:</strong> Configurável via variáveis de ambiente</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/configuracoes.js') }}"></script>
+{% endblock %}

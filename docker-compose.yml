@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://pdvuser:pdvpass@db:5432/pdvmf
+      - SECRET_KEY=sua-chave-secreta-aqui
+      - FLASK_ENV=production
+    depends_on:
+      - db
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=pdvuser
+      - POSTGRES_PASSWORD=pdvpass
+      - POSTGRES_DB=pdvmf
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

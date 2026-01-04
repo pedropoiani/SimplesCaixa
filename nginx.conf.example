@@ -1,0 +1,67 @@
+# Configuração Nginx para PDV-MF
+# Copie para: /etc/nginx/sites-available/pdv-mf
+# Link: sudo ln -s /etc/nginx/sites-available/pdv-mf /etc/nginx/sites-enabled/
+# Teste: sudo nginx -t
+# Reload: sudo systemctl reload nginx
+
+server {
+    listen 80;
+    server_name seu-dominio.com www.seu-dominio.com;
+
+    # Redirecionar para HTTPS (após configurar SSL)
+    # return 301 https://$server_name$request_uri;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket support (se necessário no futuro)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Arquivos estáticos (opcional, para performance)
+    location /static {
+        alias /caminho/para/SimplesCaixa/app/static;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Logs
+    access_log /var/log/nginx/pdv-mf-access.log;
+    error_log /var/log/nginx/pdv-mf-error.log;
+}
+
+# Configuração HTTPS (após obter certificado com certbot)
+# server {
+#     listen 443 ssl http2;
+#     server_name seu-dominio.com www.seu-dominio.com;
+#
+#     ssl_certificate /etc/letsencrypt/live/seu-dominio.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/seu-dominio.com/privkey.pem;
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#
+#     location / {
+#         proxy_pass http://127.0.0.1:5000;
+#         proxy_set_header Host $host;
+#         proxy_set_header X-Real-IP $remote_addr;
+#         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+#         proxy_set_header X-Forwarded-Proto $scheme;
+#     }
+#
+#     location /static {
+#         alias /caminho/para/SimplesCaixa/app/static;
+#         expires 30d;
+#         add_header Cache-Control "public, immutable";
+#     }
+# }
