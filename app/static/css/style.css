@@ -1444,131 +1444,181 @@ body {
         font-size: 0.7rem;
     }
     
-    /* Modal PDV - Otimizado para iPad */
+    /* Modal PDV - Otimizado para iPad Landscape */
+    .modal-pdv {
+        padding: 0.5rem;
+    }
+    
     .modal-pdv-content {
-        width: 95%;
-        max-width: 750px;
-        max-height: 90vh;
+        width: 98%;
+        max-width: 850px;
+        max-height: 95vh;
         border-radius: 12px;
+        margin: auto;
     }
     
     .modal-pdv-header {
-        padding: 0.75rem 1rem;
+        padding: 0.6rem 1rem;
     }
     
     .modal-pdv-header h3 {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     
     .modal-pdv-close {
-        width: 28px;
-        height: 28px;
-        font-size: 1.2rem;
+        width: 26px;
+        height: 26px;
+        font-size: 1.1rem;
     }
     
     .modal-pdv-body {
-        padding: 0.75rem;
-        max-height: calc(90vh - 50px);
+        padding: 0.6rem;
+        max-height: calc(95vh - 45px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
-    /* Layout Horizontal Modal - Manter Grid */
+    /* Layout Horizontal Modal - iPad Optimizado */
     .modal-layout-horizontal {
-        grid-template-columns: 1fr 220px;
-        gap: 0.75rem;
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 0.6rem;
+        align-items: start;
+        min-height: 0;
     }
     
-    /* Form Group PDV */
+    .modal-lado-esquerdo {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-height: 0;
+        overflow-y: auto;
+        max-height: calc(95vh - 100px);
+    }
+    
+    .modal-lado-direito {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        position: sticky;
+        top: 0;
+    }
+    
+    /* Form Group PDV - Compacto */
     .form-group-pdv {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
     }
     
     .form-group-pdv label {
-        margin-bottom: 0.2rem;
-        font-size: 0.65rem;
+        margin-bottom: 0.15rem;
+        font-size: 0.6rem;
+        letter-spacing: 0.5px;
     }
     
     .form-control-pdv {
-        padding: 0.5rem 0.6rem;
-        font-size: 0.85rem;
+        padding: 0.45rem 0.5rem;
+        font-size: 0.8rem;
         border-radius: 6px;
     }
     
-    /* Formas Pagamento */
+    /* Formas Pagamento - Compacto */
     .formas-pagamento-grid {
-        gap: 0.35rem;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.3rem;
     }
     
     .forma-btn {
-        padding: 0.45rem;
+        padding: 0.4rem 0.3rem;
         border-radius: 6px;
+        border-width: 1px;
     }
     
     .forma-btn span {
-        font-size: 0.75rem;
-    }
-    
-    /* Display Valor */
-    .valor-display {
-        padding: 0.5rem 0.75rem;
-        border-radius: 8px;
-    }
-    
-    .valor-display-label {
-        font-size: 0.6rem;
-    }
-    
-    .valor-display-numero {
-        font-size: 1.4rem;
-    }
-    
-    .valor-display.compacto .valor-display-numero {
-        font-size: 1.1rem;
-    }
-    
-    /* Teclado Virtual - Compacto */
-    .teclado-virtual {
-        gap: 4px;
-    }
-    
-    .tecla {
-        padding: 0.6rem;
-        font-size: 1.1rem;
-        border-radius: 6px;
-    }
-    
-    .tecla.confirmar {
-        padding: 0.6rem;
-        font-size: 0.85rem;
-    }
-    
-    /* Valores Rapidos */
-    .valores-rapidos {
-        gap: 0.25rem;
-    }
-    
-    .valor-rapido-btn {
-        padding: 0.35rem;
         font-size: 0.7rem;
     }
     
-    /* Motivos Rapidos */
+    /* Display Valor - Compacto */
+    .valor-display {
+        padding: 0.4rem 0.6rem;
+        border-radius: 6px;
+    }
+    
+    .valor-display-label {
+        font-size: 0.55rem;
+        margin-bottom: 0;
+    }
+    
+    .valor-display-numero {
+        font-size: 1.2rem;
+    }
+    
+    .valor-display.compacto {
+        padding: 0.35rem 0.5rem;
+    }
+    
+    .valor-display.compacto .valor-display-numero {
+        font-size: 1rem;
+    }
+    
+    /* Teclado Virtual - Super Compacto para iPad */
+    .teclado-virtual {
+        gap: 3px;
+    }
+    
+    .teclado-virtual.compacto {
+        gap: 2px;
+    }
+    
+    .tecla {
+        padding: 0.5rem 0.3rem;
+        font-size: 1rem;
+        border-radius: 5px;
+        min-height: 36px;
+    }
+    
+    .tecla.confirmar {
+        padding: 0.45rem;
+        font-size: 0.75rem;
+        min-height: 34px;
+    }
+    
+    .tecla.limpar,
+    .tecla.backspace {
+        font-size: 0.9rem;
+    }
+    
+    /* Valores Rapidos - Compacto */
+    .valores-rapidos {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.2rem;
+    }
+    
+    .valor-rapido-btn {
+        padding: 0.3rem 0.2rem;
+        font-size: 0.65rem;
+    }
+    
+    /* Motivos Rapidos - Compacto */
     .motivos-rapidos {
-        gap: 0.25rem;
-        margin-bottom: 0.5rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.2rem;
+        margin-bottom: 0.4rem;
     }
     
     .motivo-btn {
-        padding: 0.4rem 0.3rem;
-        font-size: 0.65rem;
+        padding: 0.35rem 0.25rem;
+        font-size: 0.6rem;
     }
     
     /* Secao Troco */
     .secao-troco {
-        padding: 0.5rem;
+        padding: 0.4rem;
+        margin-top: 0.3rem;
     }
     
     .secao-troco h4 {
-        font-size: 0.7rem;
+        font-size: 0.6rem;
+        margin-bottom: 0.2rem;
     }
     
     /* Info Message */
