@@ -812,12 +812,12 @@ body {
 
 .tecla-inline {
     width: calc(8.33% - 4px);
-    min-width: 36px;
-    padding: 0.5rem 0;
-    font-size: 1rem;
+    min-width: 48px;
+    padding: 0.7rem 0;
+    font-size: 1.2rem;
     font-weight: 700;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     background: rgba(255, 255, 255, 0.15);
     color: white;
@@ -840,11 +840,11 @@ body {
 
 .btn-confirmar-inline {
     width: 100%;
-    padding: 0.65rem;
-    font-size: 1rem;
+    padding: 0.85rem;
+    font-size: 1.15rem;
     font-weight: 700;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     background: var(--success-color);
     color: white;
@@ -1748,16 +1748,16 @@ body {
     }
     
     .tecla-inline {
-        min-width: 32px;
-        padding: 0.4rem 0;
-        font-size: 0.9rem;
-        border-radius: 5px;
+        min-width: 44px;
+        padding: 0.6rem 0;
+        font-size: 1.1rem;
+        border-radius: 6px;
     }
     
     .btn-confirmar-inline {
-        padding: 0.5rem;
-        font-size: 0.9rem;
-        border-radius: 6px;
+        padding: 0.7rem;
+        font-size: 1rem;
+        border-radius: 8px;
     }
     
     /* Info Message */

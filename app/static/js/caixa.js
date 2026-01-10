@@ -1,11 +1,12 @@
 /**
  * PDV-MF - Controle de Caixa
  * Interface estilo PDV profissional com teclado virtual
- * Versao: 1.0.1 - 09/01/2026
+ * Versao: 1.0.5 - 10/01/2026
  * ES5 Compativel (iOS 9+)
  */
 
 var caixaAtual = null;
+var dadosFechamentoTemp = null;
 var formasPagamento = [];
 var valorAtual = '';
 var valorRecebidoAtual = '';
@@ -275,6 +276,38 @@ function configurarInputValor(inputId, campo) {
     input.addEventListener('focus', function() {
         campoAtivo = campo;
     });
+}
+
+// ====================================
+// MODAL DE CONFIRMACAO CUSTOMIZADO (iOS compativel)
+// ====================================
+
+function mostrarConfirmacao(titulo, mensagem, onConfirm) {
+    var overlay = document.createElement('div');
+    overlay.id = 'confirmOverlay';
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+    
+    var box = document.createElement('div');
+    box.style.cssText = 'background: #2d2d2d; border-radius: 12px; padding: 1.5rem; max-width: 90%; width: 400px; text-align: center; border: 2px solid #c01c28;';
+    
+    box.innerHTML = '<div style="font-size: 1.2rem; font-weight: 700; color: #ff6b6b; margin-bottom: 1rem;">' + titulo + '</div>' +
+        '<div style="font-size: 1rem; color: white; margin-bottom: 1.5rem; line-height: 1.4;">' + mensagem + '</div>' +
+        '<div style="display: flex; gap: 1rem; justify-content: center;">' +
+            '<button id="btnCancelarConfirm" style="padding: 0.8rem 1.5rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #555; color: white; cursor: pointer; min-width: 100px;">CANCELAR</button>' +
+            '<button id="btnConfirmarConfirm" style="padding: 0.8rem 1.5rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; background: #c01c28; color: white; cursor: pointer; min-width: 100px;">CONFIRMAR</button>' +
+        '</div>';
+    
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    
+    document.getElementById('btnCancelarConfirm').onclick = function() {
+        document.body.removeChild(overlay);
+    };
+    
+    document.getElementById('btnConfirmarConfirm').onclick = function() {
+        document.body.removeChild(overlay);
+        if (onConfirm) onConfirm();
+    };
 }
 
 // Gerar teclado inline compacto (2 linhas)
@@ -935,27 +968,42 @@ function calcularDiferenca() {
 }
 
 function confirmarFecharCaixa() {
-    if (!confirm('Tem certeza que deseja fechar o caixa? Esta acao nao pode ser desfeita.')) {
-        return;
-    }
-    
     var valorContado = getValorNumerico(valorAtual);
     var obsInput = document.getElementById('inputObs');
     var observacao = obsInput ? obsInput.value : '';
     
-    var dados = {
-        observacao: observacao
+    // Guardar dados temporariamente
+    dadosFechamentoTemp = {
+        observacao: observacao,
+        valor_contado: valorContado > 0 ? valorContado : null
     };
     
-    if (valorContado > 0) {
-        dados.valor_contado = valorContado;
+    // Fechar modal atual e mostrar confirmacao
+    fecharModalPDV();
+    
+    mostrarConfirmacao(
+        '⚠️ FECHAR CAIXA',
+        'Tem certeza que deseja fechar o caixa?<br><br>Esta acao NAO pode ser desfeita.',
+        executarFechamentoCaixa
+    );
+}
+
+function executarFechamentoCaixa() {
+    if (!dadosFechamentoTemp) return;
+    
+    var dados = {
+        observacao: dadosFechamentoTemp.observacao
+    };
+    
+    if (dadosFechamentoTemp.valor_contado) {
+        dados.valor_contado = dadosFechamentoTemp.valor_contado;
     }
     
     API.fecharCaixa(dados)
         .then(function(resultado) {
             if (resultado.success) {
                 mostrarNotificacao('Caixa fechado com sucesso!', 'sucesso');
-                fecharModalPDV();
+                dadosFechamentoTemp = null;
                 return verificarCaixa();
             } else {
                 mostrarNotificacao(resultado.message, 'erro');
