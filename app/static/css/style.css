@@ -1,6 +1,7 @@
 /* ====================================
    PDV-MF - Sistema de Caixa
    Estilo Profissional PDV
+   Otimizado para iPad iOS 10.3.3+
    ==================================== */
 
 /* Reset e Variáveis */
@@ -33,6 +34,13 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
 }
 
 body {
@@ -41,6 +49,21 @@ body {
     color: var(--text-light);
     line-height: 1.5;
     min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+/* Prevent iOS zoom on input focus */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
 }
 
 /* Navbar */
@@ -361,6 +384,22 @@ body {
     font-weight: 700;
     color: white;
     letter-spacing: 1px;
+}
+
+/* Touch States para iOS */
+.btn-operacao:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .btn-operacao:hover {
+        transform: none;
+    }
+    
+    .btn-operacao:active {
+        transform: scale(0.96);
+    }
 }
 
 /* Últimos Lançamentos */
@@ -1233,67 +1272,493 @@ body {
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/* ====================================
+   RESPONSIVO - IPAD HORIZONTAL (1024x768)
+   ==================================== */
+
+/* iPad Landscape - Otimizado */
+@media (min-width: 768px) and (max-width: 1199px) and (orientation: landscape) {
+    body {
+        font-size: 14px;
+    }
+    
+    .navbar {
+        padding: 0;
+    }
+    
+    .nav-container {
+        padding: 0.5rem 1rem;
+    }
+    
+    .nav-brand h1 {
+        font-size: 1.25rem;
+    }
+    
+    .nav-link {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Container PDV */
+    .pdv-container {
+        padding: 0.75rem;
+        max-width: 100%;
+    }
+    
+    /* Painel Superior Compacto */
+    .painel-superior {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-radius: 10px;
+    }
+    
+    .painel-info-loja {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+        gap: 1rem;
+    }
+    
+    .painel-info-loja h1 {
+        font-size: 1.1rem;
+    }
+    
+    .operador-info {
+        font-size: 0.8rem;
+    }
+    
+    .painel-valores {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .valor-box {
+        padding: 0.6rem 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .valor-label {
+        font-size: 0.6rem;
+        margin-bottom: 0.2rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .valor-numero {
+        font-size: 1.1rem;
+    }
+    
+    /* Area Principal - Layout Otimizado */
+    .area-principal {
+        display: grid;
+        grid-template-columns: 55% 45%;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        height: calc(100vh - 240px);
+        min-height: 280px;
+    }
+    
+    /* Botoes Operacao */
+    .botoes-operacao {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        height: 100%;
+    }
+    
+    .btn-operacao {
+        min-height: auto;
+        padding: 1rem;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-icon {
+        font-size: 2rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .btn-texto {
+        font-size: 0.9rem;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Ultimos Lancamentos */
+    .ultimos-lancamentos {
+        padding: 0.75rem;
+        border-radius: 10px;
+        max-height: none;
+        height: 100%;
+    }
+    
+    .lancamentos-header {
+        margin-bottom: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    .lancamentos-header h3 {
+        font-size: 0.85rem;
+    }
+    
+    .btn-refresh {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .lancamento-item {
+        padding: 0.5rem 0.75rem;
+        border-radius: 6px;
+    }
+    
+    .lancamento-categoria {
+        font-size: 0.75rem;
+    }
+    
+    .lancamento-descricao {
+        font-size: 0.65rem;
+    }
+    
+    .lancamento-valor {
+        font-size: 0.85rem;
+    }
+    
+    /* Rodape */
+    .rodape-caixa {
+        margin-top: 0.5rem;
+    }
+    
+    .btn-fechar-caixa {
+        padding: 0.6rem 2rem;
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+    
+    /* Footer */
+    .footer {
+        padding: 0.5rem;
+        font-size: 0.7rem;
+    }
+    
+    /* Modal PDV - Otimizado para iPad */
+    .modal-pdv-content {
+        width: 95%;
+        max-width: 750px;
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+    
+    .modal-pdv-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .modal-pdv-header h3 {
+        font-size: 1rem;
+    }
+    
+    .modal-pdv-close {
+        width: 28px;
+        height: 28px;
+        font-size: 1.2rem;
+    }
+    
+    .modal-pdv-body {
+        padding: 0.75rem;
+        max-height: calc(90vh - 50px);
+    }
+    
+    /* Layout Horizontal Modal - Manter Grid */
+    .modal-layout-horizontal {
+        grid-template-columns: 1fr 220px;
+        gap: 0.75rem;
+    }
+    
+    /* Form Group PDV */
+    .form-group-pdv {
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group-pdv label {
+        margin-bottom: 0.2rem;
+        font-size: 0.65rem;
+    }
+    
+    .form-control-pdv {
+        padding: 0.5rem 0.6rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+    }
+    
+    /* Formas Pagamento */
+    .formas-pagamento-grid {
+        gap: 0.35rem;
+    }
+    
+    .forma-btn {
+        padding: 0.45rem;
+        border-radius: 6px;
+    }
+    
+    .forma-btn span {
+        font-size: 0.75rem;
+    }
+    
+    /* Display Valor */
+    .valor-display {
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+    }
+    
+    .valor-display-label {
+        font-size: 0.6rem;
+    }
+    
+    .valor-display-numero {
+        font-size: 1.4rem;
+    }
+    
+    .valor-display.compacto .valor-display-numero {
+        font-size: 1.1rem;
+    }
+    
+    /* Teclado Virtual - Compacto */
+    .teclado-virtual {
+        gap: 4px;
+    }
+    
+    .tecla {
+        padding: 0.6rem;
+        font-size: 1.1rem;
+        border-radius: 6px;
+    }
+    
+    .tecla.confirmar {
+        padding: 0.6rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Valores Rapidos */
+    .valores-rapidos {
+        gap: 0.25rem;
+    }
+    
+    .valor-rapido-btn {
+        padding: 0.35rem;
+        font-size: 0.7rem;
+    }
+    
+    /* Motivos Rapidos */
+    .motivos-rapidos {
+        gap: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .motivo-btn {
+        padding: 0.4rem 0.3rem;
+        font-size: 0.65rem;
+    }
+    
+    /* Secao Troco */
+    .secao-troco {
+        padding: 0.5rem;
+    }
+    
+    .secao-troco h4 {
+        font-size: 0.7rem;
+    }
+    
+    /* Info Message */
+    .info-message {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Caixa Fechado */
+    .caixa-fechado-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .caixa-fechado-content h2 {
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .caixa-fechado-content p {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .btn-abrir-caixa {
+        padding: 1rem 3rem;
+        font-size: 1.2rem;
+        border-radius: 12px;
+    }
+}
+
+/* iPad Portrait */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+    .pdv-container {
+        padding: 1rem;
+    }
+    
     .painel-valores {
         grid-template-columns: repeat(2, 1fr);
     }
     
     .area-principal {
         grid-template-columns: 1fr;
+        height: auto;
+    }
+    
+    .botoes-operacao {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     .ultimos-lancamentos {
-        max-height: 300px;
+        max-height: 250px;
     }
     
     .modal-layout-horizontal {
         grid-template-columns: 1fr;
     }
     
-    .modal-pdv-content {
-        max-width: 500px;
+    .modal-lado-direito {
+        order: -1;
     }
 }
 
-@media (max-width: 768px) {
+/* Tablets menores e Phones */
+@media (max-width: 767px) {
     .nav-container {
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.5rem;
+        padding: 0.5rem;
+    }
+    
+    .nav-brand h1 {
+        font-size: 1.2rem;
     }
     
     .nav-menu {
         width: 100%;
         justify-content: center;
+        gap: 0.25rem;
+    }
+    
+    .nav-link {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
     }
     
     .nav-status {
         margin-left: 0;
     }
     
+    .status-badge {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.7rem;
+    }
+    
+    .pdv-container {
+        padding: 0.5rem;
+    }
+    
+    .painel-superior {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .painel-info-loja {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
     .painel-valores {
         grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .valor-box {
+        padding: 0.6rem;
+    }
+    
+    .valor-label {
+        font-size: 0.55rem;
     }
     
     .valor-numero {
-        font-size: 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .area-principal {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
     }
     
     .botoes-operacao {
         grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
     }
     
     .btn-operacao {
-        min-height: 120px;
-        padding: 1.5rem;
+        min-height: 100px;
+        padding: 1rem;
     }
     
     .btn-icon {
-        font-size: 2rem;
+        font-size: 1.75rem;
+        margin-bottom: 0.3rem;
     }
     
     .btn-texto {
-        font-size: 1rem;
+        font-size: 0.8rem;
+    }
+    
+    .ultimos-lancamentos {
+        max-height: 200px;
+    }
+    
+    .btn-fechar-caixa {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+    }
+    
+    /* Modal */
+    .modal-pdv-content {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 0;
+        max-height: 100vh;
+        height: 100vh;
+    }
+    
+    .modal-layout-horizontal {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-lado-direito {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--bg-medium);
+        padding: 0.5rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .teclado-virtual {
+        gap: 3px;
+    }
+    
+    .tecla {
+        padding: 0.75rem;
+        font-size: 1.2rem;
     }
     
     .formas-pagamento-grid {
@@ -1301,17 +1766,17 @@ body {
     }
     
     .valores-rapidos {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .motivos-rapidos {
         grid-template-columns: repeat(2, 1fr);
     }
     
-    .modal-pdv-content {
-        max-width: 100%;
-        border-radius: 0;
-        max-height: 100vh;
-    }
-    
-    .modal-layout-horizontal {
-        grid-template-columns: 1fr;
+    /* Footer */
+    .footer {
+        padding: 0.75rem;
+        font-size: 0.7rem;
     }
 }
 
