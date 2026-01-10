@@ -230,6 +230,13 @@ function atualizarDisplayValor() {
     if (display) {
         display.textContent = formatarValorDisplay(valorAtual);
     }
+    
+    // Tambem atualizar input se existir
+    var inputValor = document.getElementById('inputValor');
+    if (inputValor) {
+        inputValor.value = formatarValorDisplay(valorAtual);
+    }
+    
     calcularTroco();
 }
 
@@ -238,7 +245,57 @@ function atualizarDisplayRecebido() {
     if (display) {
         display.textContent = formatarValorDisplay(valorRecebidoAtual);
     }
+    
+    // Tambem atualizar input se existir
+    var inputRecebido = document.getElementById('inputRecebido');
+    if (inputRecebido) {
+        inputRecebido.value = formatarValorDisplay(valorRecebidoAtual);
+    }
+    
     calcularTroco();
+}
+
+// Funcao para tratar input de teclado fisico
+function configurarInputValor(inputId, campo) {
+    var input = document.getElementById(inputId);
+    if (!input) return;
+    
+    input.addEventListener('input', function(e) {
+        var valor = e.target.value.replace(/\D/g, '');
+        if (campo === 'valor') {
+            valorAtual = valor;
+            e.target.value = formatarValorDisplay(valorAtual);
+        } else if (campo === 'recebido') {
+            valorRecebidoAtual = valor;
+            e.target.value = formatarValorDisplay(valorRecebidoAtual);
+        }
+        calcularTroco();
+    });
+    
+    input.addEventListener('focus', function() {
+        campoAtivo = campo;
+    });
+}
+
+// Gerar teclado inline compacto (2 linhas)
+function gerarTecladoInline(btnConfirmarTexto, btnConfirmarOnclick) {
+    return '<div class="teclado-inline">' +
+        '<div class="teclado-linha">' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'1\')">1</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'2\')">2</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'3\')">3</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'4\')">4</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'5\')">5</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'6\')">6</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'7\')">7</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'8\')">8</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'9\')">9</button>' +
+            '<button class="tecla-inline" onclick="teclarNumero(\'0\')">0</button>' +
+            '<button class="tecla-inline limpar" onclick="limparTeclado()">C</button>' +
+            '<button class="tecla-inline backspace" onclick="apagarUltimo()">⌫</button>' +
+        '</div>' +
+        '<button class="btn-confirmar-inline" onclick="' + btnConfirmarOnclick + '">' + btnConfirmarTexto + '</button>' +
+    '</div>';
 }
 
 function formatarValorDisplay(valor) {
@@ -302,40 +359,23 @@ function setarValorRapido(valor) {
 // ====================================
 
 function modalAbrirCaixa() {
-    var conteudo = '<div class="modal-layout-horizontal">' +
-        '<div class="modal-lado-esquerdo">' +
-            '<div class="form-group-pdv">' +
-                '<label>OPERADOR</label>' +
-                '<input type="text" id="inputOperador" class="form-control-pdv" placeholder="Nome do operador">' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>TROCO INICIAL</label>' +
-                '<div class="valor-display ativo" id="containerValor" onclick="setarCampoAtivo(\'valor\')">' +
-                    '<div class="valor-display-label">Valor em caixa</div>' +
-                    '<div class="valor-display-numero" id="displayValor">R$ 0,00</div>' +
-                '</div>' +
-            '</div>' +
+    var conteudo = '<div class="modal-simples">' +
+        '<div class="form-group-pdv">' +
+            '<label>OPERADOR</label>' +
+            '<input type="text" id="inputOperador" class="form-control-pdv" placeholder="Nome do operador">' +
         '</div>' +
-        '<div class="modal-lado-direito">' +
-            '<div class="teclado-virtual compacto">' +
-                '<button class="tecla" onclick="teclarNumero(\'1\')">1</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'2\')">2</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'3\')">3</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'4\')">4</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'5\')">5</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'6\')">6</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'7\')">7</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'8\')">8</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'9\')">9</button>' +
-                '<button class="tecla limpar" onclick="limparTeclado()">C</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'0\')">0</button>' +
-                '<button class="tecla backspace" onclick="apagarUltimo()">&#9003;</button>' +
-                '<button class="tecla confirmar" onclick="confirmarAbrirCaixa()">ABRIR</button>' +
-            '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label class="input-valor-label">TROCO INICIAL</label>' +
+            '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
         '</div>' +
+        gerarTecladoInline('🔓 ABRIR CAIXA', 'confirmarAbrirCaixa()') +
     '</div>';
     
     abrirModalPDV('Abrir Caixa', conteudo, 'success');
+    
+    setTimeout(function() {
+        configurarInputValor('inputValor', 'valor');
+    }, 100);
 }
 
 function confirmarAbrirCaixa() {
@@ -378,61 +418,42 @@ function modalVenda() {
         '</button>';
     }
     
-    var conteudo = '<div class="modal-layout-horizontal">' +
-        '<div class="modal-lado-esquerdo">' +
+    var conteudo = '<div class="modal-simples">' +
+        '<div class="form-group-pdv">' +
+            '<label>FORMA DE PAGAMENTO</label>' +
+            '<div class="formas-pagamento-grid">' + formasHtml + '</div>' +
+        '</div>' +
+        '<div id="areaValorVenda" style="display: none;">' +
             '<div class="form-group-pdv">' +
-                '<label>FORMA DE PAGAMENTO</label>' +
-                '<div class="formas-pagamento-grid">' + formasHtml + '</div>' +
+                '<label class="input-valor-label">VALOR DA VENDA</label>' +
+                '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
             '</div>' +
-            '<div id="areaValorVenda" style="display: none;">' +
+            '<div id="areaDinheiro" style="display: none;">' +
                 '<div class="form-group-pdv">' +
-                    '<label>VALOR DA VENDA</label>' +
-                    '<div class="valor-display ativo" id="containerValor" onclick="setarCampoAtivo(\'valor\')">' +
-                        '<div class="valor-display-label">Total</div>' +
-                        '<div class="valor-display-numero" id="displayValor">R$ 0,00</div>' +
-                    '</div>' +
+                    '<label class="input-valor-label">VALOR RECEBIDO</label>' +
+                    '<input type="text" id="inputRecebido" class="input-valor" style="font-size: 1.2rem;" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
                 '</div>' +
-                '<div id="areaDinheiro" style="display: none;">' +
-                    '<div class="form-group-pdv">' +
-                        '<label>VALOR RECEBIDO</label>' +
-                        '<div class="valor-display compacto" id="containerRecebido" onclick="setarCampoAtivo(\'recebido\')">' +
-                            '<div class="valor-display-label">Recebido</div>' +
-                            '<div class="valor-display-numero" id="displayRecebido">R$ 0,00</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="valores-rapidos">' +
-                        '<button class="valor-rapido-btn" onclick="setarValorRapido(10)">R$10</button>' +
-                        '<button class="valor-rapido-btn" onclick="setarValorRapido(20)">R$20</button>' +
-                        '<button class="valor-rapido-btn" onclick="setarValorRapido(50)">R$50</button>' +
-                        '<button class="valor-rapido-btn" onclick="setarValorRapido(100)">R$100</button>' +
-                    '</div>' +
-                    '<div class="secao-troco" id="secaoTroco" style="display: none;">' +
-                        '<h4>TROCO</h4>' +
-                        '<div class="valor-display-numero" id="displayTroco" style="font-size: 1.5rem; color: #26a269;">R$ 0,00</div>' +
-                    '</div>' +
+                '<div class="valores-rapidos">' +
+                    '<button class="valor-rapido-btn" onclick="setarValorRapido(10)">R$10</button>' +
+                    '<button class="valor-rapido-btn" onclick="setarValorRapido(20)">R$20</button>' +
+                    '<button class="valor-rapido-btn" onclick="setarValorRapido(50)">R$50</button>' +
+                    '<button class="valor-rapido-btn" onclick="setarValorRapido(100)">R$100</button>' +
+                '</div>' +
+                '<div class="secao-troco" id="secaoTroco" style="display: none;">' +
+                    '<h4>TROCO</h4>' +
+                    '<div class="valor-display-numero" id="displayTroco" style="font-size: 1.3rem; color: #26a269;">R$ 0,00</div>' +
                 '</div>' +
             '</div>' +
         '</div>' +
-        '<div class="modal-lado-direito">' +
-            '<div class="teclado-virtual compacto">' +
-                '<button class="tecla" onclick="teclarNumero(\'1\')">1</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'2\')">2</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'3\')">3</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'4\')">4</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'5\')">5</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'6\')">6</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'7\')">7</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'8\')">8</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'9\')">9</button>' +
-                '<button class="tecla limpar" onclick="limparTeclado()">C</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'0\')">0</button>' +
-                '<button class="tecla backspace" onclick="apagarUltimo()">&#9003;</button>' +
-                '<button class="tecla confirmar" onclick="confirmarVenda()">CONFIRMAR</button>' +
-            '</div>' +
-        '</div>' +
+        gerarTecladoInline('💳 CONFIRMAR VENDA', 'confirmarVenda()') +
     '</div>';
     
     abrirModalPDV('Nova Venda', conteudo, 'success');
+    
+    setTimeout(function() {
+        configurarInputValor('inputValor', 'valor');
+        configurarInputValor('inputRecebido', 'recebido');
+    }, 100);
 }
 
 function getIconeForma(forma) {
@@ -544,54 +565,37 @@ function confirmarVenda() {
 // ====================================
 
 function modalSangria() {
-    var conteudo = '<div class="modal-layout-horizontal">' +
-        '<div class="modal-lado-esquerdo">' +
-            '<div class="info-message" style="margin-bottom: 0.75rem; padding: 0.75rem;">' +
-                'Sangria e a retirada de dinheiro do caixa' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>VALOR DA SANGRIA</label>' +
-                '<div class="valor-display ativo" id="containerValor" onclick="setarCampoAtivo(\'valor\')">' +
-                    '<div class="valor-display-label">Valor a retirar</div>' +
-                    '<div class="valor-display-numero" id="displayValor">R$ 0,00</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>MOTIVO RAPIDO</label>' +
-                '<div class="motivos-rapidos">' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Alimentacao\')">Alimentacao</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Embalagem\')">Embalagem</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Pro-labore\')">Pro-labore</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Transporte\')">Transporte</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Pagamento\')">Pagamento</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Retirada banco\')">Banco</button>' +
-                '</div>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>MOTIVO</label>' +
-                '<input type="text" id="inputMotivo" class="form-control-pdv" placeholder="Ou digite aqui...">' +
+    var conteudo = '<div class="modal-simples">' +
+        '<div class="info-message" style="margin-bottom: 0.5rem; padding: 0.5rem; font-size: 0.8rem;">' +
+            'Sangria e a retirada de dinheiro do caixa' +
+        '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label class="input-valor-label">VALOR DA SANGRIA</label>' +
+            '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
+        '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label>MOTIVO RAPIDO</label>' +
+            '<div class="motivos-rapidos">' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Alimentacao\')">Alimentacao</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Embalagem\')">Embalagem</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Pro-labore\')">Pro-labore</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Transporte\')">Transporte</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Pagamento\')">Pagamento</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Retirada banco\')">Banco</button>' +
             '</div>' +
         '</div>' +
-        '<div class="modal-lado-direito">' +
-            '<div class="teclado-virtual compacto">' +
-                '<button class="tecla" onclick="teclarNumero(\'1\')">1</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'2\')">2</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'3\')">3</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'4\')">4</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'5\')">5</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'6\')">6</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'7\')">7</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'8\')">8</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'9\')">9</button>' +
-                '<button class="tecla limpar" onclick="limparTeclado()">C</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'0\')">0</button>' +
-                '<button class="tecla backspace" onclick="apagarUltimo()">&#9003;</button>' +
-                '<button class="tecla confirmar" style="background: #c01c28;" onclick="confirmarSangria()">CONFIRMAR</button>' +
-            '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label>MOTIVO</label>' +
+            '<input type="text" id="inputMotivo" class="form-control-pdv" placeholder="Ou digite aqui...">' +
         '</div>' +
+        gerarTecladoInline('💸 CONFIRMAR SANGRIA', 'confirmarSangria()') +
     '</div>';
     
     abrirModalPDV('Sangria', conteudo, 'danger');
+    
+    setTimeout(function() {
+        configurarInputValor('inputValor', 'valor');
+    }, 100);
 }
 
 function setarMotivo(motivo) {
@@ -649,52 +653,35 @@ function confirmarSangria() {
 // ====================================
 
 function modalSuprimento() {
-    var conteudo = '<div class="modal-layout-horizontal">' +
-        '<div class="modal-lado-esquerdo">' +
-            '<div class="info-message" style="margin-bottom: 0.75rem; padding: 0.75rem;">' +
-                'Suprimento e a entrada de dinheiro no caixa' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>VALOR DO SUPRIMENTO</label>' +
-                '<div class="valor-display ativo" id="containerValor" onclick="setarCampoAtivo(\'valor\')">' +
-                    '<div class="valor-display-label">Valor a adicionar</div>' +
-                    '<div class="valor-display-numero" id="displayValor">R$ 0,00</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>MOTIVO RAPIDO</label>' +
-                '<div class="motivos-rapidos">' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Troco do banco\')">Troco banco</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Reforco de caixa\')">Reforco</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Devolucao\')">Devolucao</button>' +
-                    '<button class="motivo-btn" onclick="setarMotivo(\'Acerto\')">Acerto</button>' +
-                '</div>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>MOTIVO</label>' +
-                '<input type="text" id="inputMotivo" class="form-control-pdv" placeholder="Ou digite aqui...">' +
+    var conteudo = '<div class="modal-simples">' +
+        '<div class="info-message" style="margin-bottom: 0.5rem; padding: 0.5rem; font-size: 0.8rem;">' +
+            'Suprimento e a entrada de dinheiro no caixa' +
+        '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label class="input-valor-label">VALOR DO SUPRIMENTO</label>' +
+            '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
+        '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label>MOTIVO RAPIDO</label>' +
+            '<div class="motivos-rapidos">' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Troco do banco\')">Troco banco</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Reforco de caixa\')">Reforco</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Devolucao\')">Devolucao</button>' +
+                '<button class="motivo-btn" onclick="setarMotivo(\'Acerto\')">Acerto</button>' +
             '</div>' +
         '</div>' +
-        '<div class="modal-lado-direito">' +
-            '<div class="teclado-virtual compacto">' +
-                '<button class="tecla" onclick="teclarNumero(\'1\')">1</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'2\')">2</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'3\')">3</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'4\')">4</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'5\')">5</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'6\')">6</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'7\')">7</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'8\')">8</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'9\')">9</button>' +
-                '<button class="tecla limpar" onclick="limparTeclado()">C</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'0\')">0</button>' +
-                '<button class="tecla backspace" onclick="apagarUltimo()">&#9003;</button>' +
-                '<button class="tecla confirmar" style="background: #1c71d8;" onclick="confirmarSuprimento()">CONFIRMAR</button>' +
-            '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label>MOTIVO</label>' +
+            '<input type="text" id="inputMotivo" class="form-control-pdv" placeholder="Ou digite aqui...">' +
         '</div>' +
+        gerarTecladoInline('💰 CONFIRMAR SUPRIMENTO', 'confirmarSuprimento()') +
     '</div>';
     
     abrirModalPDV('Suprimento', conteudo, 'info');
+    
+    setTimeout(function() {
+        configurarInputValor('inputValor', 'valor');
+    }, 100);
 }
 
 function confirmarSuprimento() {
@@ -740,51 +727,34 @@ function confirmarSuprimento() {
 function modalOutros() {
     tipoOutros = 'entrada';
     
-    var conteudo = '<div class="modal-layout-horizontal">' +
-        '<div class="modal-lado-esquerdo">' +
-            '<div class="form-group-pdv">' +
-                '<label>TIPO DE LANCAMENTO</label>' +
-                '<div class="tipo-toggle">' +
-                    '<button class="tipo-btn active entrada" onclick="setarTipoOutros(\'entrada\')" id="btnEntrada">' +
-                        'ENTRADA' +
-                    '</button>' +
-                    '<button class="tipo-btn saida" onclick="setarTipoOutros(\'saida\')" id="btnSaida">' +
-                        'SAIDA' +
-                    '</button>' +
-                '</div>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>VALOR</label>' +
-                '<div class="valor-display ativo" id="containerValor" onclick="setarCampoAtivo(\'valor\')">' +
-                    '<div class="valor-display-label">Valor do lancamento</div>' +
-                    '<div class="valor-display-numero" id="displayValor">R$ 0,00</div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>DESCRICAO *</label>' +
-                '<input type="text" id="inputDescricao" class="form-control-pdv" placeholder="Descricao do lancamento" required>' +
+    var conteudo = '<div class="modal-simples">' +
+        '<div class="form-group-pdv">' +
+            '<label>TIPO DE LANCAMENTO</label>' +
+            '<div class="tipo-toggle">' +
+                '<button class="tipo-btn active entrada" onclick="setarTipoOutros(\'entrada\')" id="btnEntrada">' +
+                    'ENTRADA' +
+                '</button>' +
+                '<button class="tipo-btn saida" onclick="setarTipoOutros(\'saida\')" id="btnSaida">' +
+                    'SAIDA' +
+                '</button>' +
             '</div>' +
         '</div>' +
-        '<div class="modal-lado-direito">' +
-            '<div class="teclado-virtual compacto">' +
-                '<button class="tecla" onclick="teclarNumero(\'1\')">1</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'2\')">2</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'3\')">3</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'4\')">4</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'5\')">5</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'6\')">6</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'7\')">7</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'8\')">8</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'9\')">9</button>' +
-                '<button class="tecla limpar" onclick="limparTeclado()">C</button>' +
-                '<button class="tecla" onclick="teclarNumero(\'0\')">0</button>' +
-                '<button class="tecla backspace" onclick="apagarUltimo()">&#9003;</button>' +
-                '<button class="tecla confirmar" onclick="confirmarOutros()">CONFIRMAR</button>' +
-            '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label class="input-valor-label">VALOR</label>' +
+            '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
         '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label>DESCRICAO *</label>' +
+            '<input type="text" id="inputDescricao" class="form-control-pdv" placeholder="Descricao do lancamento" required>' +
+        '</div>' +
+        gerarTecladoInline('📝 CONFIRMAR', 'confirmarOutros()') +
     '</div>';
     
     abrirModalPDV('Outros Lancamentos', conteudo, 'primary');
+    
+    setTimeout(function() {
+        configurarInputValor('inputValor', 'valor');
+    }, 100);
 }
 
 function setarTipoOutros(tipo) {
@@ -879,64 +849,57 @@ function mostrarModalFechar() {
     if (m.sangrias > 0) movHtml += '<div style="display: flex; justify-content: space-between;"><span>Sangrias</span><span style="color: #c01c28;">-' + formatarMoeda(m.sangrias) + '</span></div>';
     if (m.troco_dado > 0) movHtml += '<div style="display: flex; justify-content: space-between;"><span>Troco Dado</span><span style="color: #c01c28;">-' + formatarMoeda(m.troco_dado) + '</span></div>';
     
-    var conteudo = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">' +
-        '<div style="background: rgba(0,0,0,0.2); border-radius: 10px; padding: 0.75rem;">' +
-            '<h4 style="color: #26a269; margin-bottom: 0.5rem; font-size: 0.85rem;">VENDAS DO DIA</h4>' +
-            '<div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem;">' +
-                vendasHtml +
-                '<div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 0.35rem; margin-top: 0.25rem; font-weight: 700;">' +
-                    '<span>TOTAL VENDAS</span><span style="color: #26a269;">' + formatarMoeda(v.total) + '</span>' +
+    var conteudo = '<div class="modal-simples">' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem;">' +
+            '<div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem;">' +
+                '<h4 style="color: #26a269; margin-bottom: 0.35rem; font-size: 0.7rem;">VENDAS DO DIA</h4>' +
+                '<div style="display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.7rem;">' +
+                    vendasHtml +
+                    '<div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 0.25rem; margin-top: 0.15rem; font-weight: 700;">' +
+                        '<span>TOTAL</span><span style="color: #26a269;">' + formatarMoeda(v.total) + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.5rem;">' +
+                '<h4 style="color: #1c71d8; margin-bottom: 0.35rem; font-size: 0.7rem;">MOVIMENTACOES</h4>' +
+                '<div style="display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.7rem;">' +
+                    movHtml +
                 '</div>' +
             '</div>' +
         '</div>' +
-        '<div style="background: rgba(0,0,0,0.2); border-radius: 10px; padding: 0.75rem;">' +
-            '<h4 style="color: #1c71d8; margin-bottom: 0.5rem; font-size: 0.85rem;">MOVIMENTACOES</h4>' +
-            '<div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.8rem;">' +
-                movHtml +
-            '</div>' +
+        '<div style="background: linear-gradient(135deg, #1a5fb4, #0d4a8f); border-radius: 8px; padding: 0.6rem; margin-bottom: 0.5rem; text-align: center;">' +
+            '<div style="font-size: 0.6rem; color: rgba(255,255,255,0.8);">DINHEIRO ESPERADO NO CAIXA</div>' +
+            '<div style="font-size: 1.4rem; font-weight: 700; color: white;">' + formatarMoeda(resumoFechamento.dinheiro_esperado) + '</div>' +
         '</div>' +
-    '</div>' +
-    '<div style="background: linear-gradient(135deg, #1a5fb4, #0d4a8f); border-radius: 10px; padding: 1rem; margin-bottom: 1rem; text-align: center;">' +
-        '<div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-bottom: 0.25rem;">DINHEIRO ESPERADO NO CAIXA</div>' +
-        '<div style="font-size: 1.75rem; font-weight: 700; color: white;">' + formatarMoeda(resumoFechamento.dinheiro_esperado) + '</div>' +
-    '</div>' +
-    '<div class="modal-layout-horizontal">' +
-        '<div class="modal-lado-esquerdo">' +
-            '<div class="form-group-pdv">' +
-                '<label>VALOR CONTADO (DINHEIRO FISICO)</label>' +
-                '<div class="valor-display ativo" id="containerValor" onclick="setarCampoAtivo(\'valor\')">' +
-                    '<div class="valor-display-label">Conte o dinheiro no caixa</div>' +
-                    '<div class="valor-display-numero" id="displayValor">R$ 0,00</div>' +
-                '</div>' +
-            '</div>' +
-            '<div id="diferencaInfo" class="info-message" style="display: none; padding: 0.75rem;">' +
-                '<strong>Diferenca:</strong> <span id="diferencaValor"></span>' +
-            '</div>' +
-            '<div class="form-group-pdv">' +
-                '<label>OBSERVACOES</label>' +
-                '<input type="text" id="inputObs" class="form-control-pdv" placeholder="Observacoes do fechamento">' +
-            '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label class="input-valor-label">VALOR CONTADO (DINHEIRO FISICO)</label>' +
+            '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*" oninput="calcularDiferencaInput()">' +
         '</div>' +
-        '<div class="modal-lado-direito">' +
-            '<div class="teclado-virtual compacto">' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'1\')">1</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'2\')">2</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'3\')">3</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'4\')">4</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'5\')">5</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'6\')">6</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'7\')">7</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'8\')">8</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'9\')">9</button>' +
-                '<button class="tecla limpar" onclick="limparTeclado(); calcularDiferenca();">C</button>' +
-                '<button class="tecla" onclick="teclarNumeroFechar(\'0\')">0</button>' +
-                '<button class="tecla backspace" onclick="apagarUltimo(); calcularDiferenca();">&#9003;</button>' +
-                '<button class="tecla confirmar" style="background: #c01c28;" onclick="confirmarFecharCaixa()">FECHAR</button>' +
-            '</div>' +
+        '<div id="diferencaInfo" class="info-message" style="display: none; padding: 0.4rem; font-size: 0.8rem;">' +
+            '<strong>Diferenca:</strong> <span id="diferencaValor"></span>' +
         '</div>' +
+        '<div class="form-group-pdv">' +
+            '<label>OBSERVACOES</label>' +
+            '<input type="text" id="inputObs" class="form-control-pdv" placeholder="Observacoes do fechamento">' +
+        '</div>' +
+        gerarTecladoInline('🔒 FECHAR CAIXA', 'confirmarFecharCaixa()') +
     '</div>';
     
     abrirModalPDV('Fechar Caixa', conteudo, 'danger');
+    
+    setTimeout(function() {
+        configurarInputValor('inputValor', 'valor');
+    }, 100);
+}
+
+function calcularDiferencaInput() {
+    var input = document.getElementById('inputValor');
+    if (input) {
+        var valor = input.value.replace(/\D/g, '');
+        valorAtual = valor;
+        input.value = formatarValorDisplay(valorAtual);
+    }
+    calcularDiferenca();
 }
 
 function teclarNumeroFechar(num) {
