@@ -1,10 +1,12 @@
 /**
  * Service Worker para Push Notifications
  * PDV-MF Sistema de Caixa
+ * ES5 Compativel
+ * Versao: 1.0.1 - 09/01/2026
  */
 
-const CACHE_NAME = 'pdv-mf-v1';
-const urlsToCache = [
+var CACHE_NAME = 'pdv-mf-v1.0.1';
+var urlsToCache = [
     '/',
     '/gerente',
     '/static/css/style.css',
@@ -12,17 +14,17 @@ const urlsToCache = [
     '/static/js/utils.js'
 ];
 
-// Instalação do Service Worker
-self.addEventListener('install', event => {
+// Instalacao do Service Worker
+self.addEventListener('install', function(event) {
     console.log('[SW] Instalando Service Worker...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => {
+            .then(function(cache) {
                 console.log('[SW] Cache aberto');
                 return cache.addAll(urlsToCache);
             })
-            .catch(err => {
+            .catch(function(err) {
                 console.log('[SW] Erro ao abrir cache:', err);
             })
     );
@@ -30,14 +32,14 @@ self.addEventListener('install', event => {
     self.skipWaiting();
 });
 
-// Ativação
-self.addEventListener('activate', event => {
+// Ativacao
+self.addEventListener('activate', function(event) {
     console.log('[SW] Service Worker ativado');
     
     event.waitUntil(
-        caches.keys().then(cacheNames => {
+        caches.keys().then(function(cacheNames) {
             return Promise.all(
-                cacheNames.map(cacheName => {
+                cacheNames.map(function(cacheName) {
                     if (cacheName !== CACHE_NAME) {
                         console.log('[SW] Removendo cache antigo:', cacheName);
                         return caches.delete(cacheName);
@@ -50,13 +52,13 @@ self.addEventListener('activate', event => {
     return self.clients.claim();
 });
 
-// Receber notificação push
-self.addEventListener('push', event => {
+// Receber notificacao push
+self.addEventListener('push', function(event) {
     console.log('[SW] Push recebido:', event);
     
-    let data = {
-        title: '🔔 PDV-MF',
-        body: 'Nova notificação',
+    var data = {
+        title: 'PDV-MF',
+        body: 'Nova notificacao',
         icon: '/static/img/icon-192.png',
         badge: '/static/img/badge-72.png',
         vibrate: [200, 100, 200],
@@ -67,14 +69,19 @@ self.addEventListener('push', event => {
     
     if (event.data) {
         try {
-            const payload = event.data.json();
-            data = { ...data, ...payload };
+            var payload = event.data.json();
+            // Merge objects manually for ES5
+            for (var key in payload) {
+                if (payload.hasOwnProperty(key)) {
+                    data[key] = payload[key];
+                }
+            }
         } catch (e) {
             data.body = event.data.text();
         }
     }
     
-    const options = {
+    var options = {
         body: data.body,
         icon: data.icon,
         badge: data.badge,
@@ -82,7 +89,7 @@ self.addEventListener('push', event => {
         data: data.data,
         tag: data.tag,
         requireInteraction: data.requireInteraction,
-        actions: getActionsForType(data.data?.tipo)
+        actions: getActionsForType(data.data ? data.data.tipo : null)
     };
     
     event.waitUntil(
@@ -90,47 +97,45 @@ self.addEventListener('push', event => {
     );
 });
 
-// Ações baseadas no tipo de notificação
+// Acoes baseadas no tipo de notificacao
 function getActionsForType(tipo) {
-    switch (tipo) {
-        case 'sangria':
-            return [
-                { action: 'ver', title: '👁️ Ver Detalhes' },
-                { action: 'fechar', title: '✖️ Fechar' }
-            ];
-        case 'abertura':
-        case 'fechamento':
-            return [
-                { action: 'painel', title: '📊 Abrir Painel' },
-                { action: 'fechar', title: '✖️ Fechar' }
-            ];
-        case 'resumo_diario':
-            return [
-                { action: 'pdf', title: '📄 Baixar PDF' },
-                { action: 'painel', title: '📊 Ver Detalhes' }
-            ];
-        default:
-            return [
-                { action: 'ver', title: '👁️ Ver' },
-                { action: 'fechar', title: '✖️ Fechar' }
-            ];
+    if (tipo === 'sangria') {
+        return [
+            { action: 'ver', title: 'Ver Detalhes' },
+            { action: 'fechar', title: 'Fechar' }
+        ];
+    } else if (tipo === 'abertura' || tipo === 'fechamento') {
+        return [
+            { action: 'painel', title: 'Abrir Painel' },
+            { action: 'fechar', title: 'Fechar' }
+        ];
+    } else if (tipo === 'resumo_diario') {
+        return [
+            { action: 'pdf', title: 'Baixar PDF' },
+            { action: 'painel', title: 'Ver Detalhes' }
+        ];
+    } else {
+        return [
+            { action: 'ver', title: 'Ver' },
+            { action: 'fechar', title: 'Fechar' }
+        ];
     }
 }
 
-// Clique na notificação
-self.addEventListener('notificationclick', event => {
-    console.log('[SW] Notificação clicada:', event);
+// Clique na notificacao
+self.addEventListener('notificationclick', function(event) {
+    console.log('[SW] Notificacao clicada:', event);
     
     event.notification.close();
     
-    const action = event.action;
-    const data = event.notification.data || {};
+    var action = event.action;
+    var data = event.notification.data || {};
     
-    let url = '/gerente';
+    var url = '/gerente';
     
     if (action === 'pdf') {
-        const hoje = new Date().toISOString().split('T')[0];
-        url = `/api/relatorio/resumo-diario/pdf?data=${hoje}`;
+        var hoje = new Date().toISOString().split('T')[0];
+        url = '/api/relatorio/resumo-diario/pdf?data=' + hoje;
     } else if (action === 'painel') {
         url = '/gerente';
     } else if (action === 'ver') {
@@ -141,14 +146,15 @@ self.addEventListener('notificationclick', event => {
     
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then(windowClients => {
-                // Verificar se já existe uma janela aberta
-                for (let client of windowClients) {
-                    if (client.url.includes('/gerente') && 'focus' in client) {
+            .then(function(windowClients) {
+                // Verificar se ja existe uma janela aberta
+                for (var i = 0; i < windowClients.length; i++) {
+                    var client = windowClients[i];
+                    if (client.url.indexOf('/gerente') !== -1 && 'focus' in client) {
                         return client.focus();
                     }
                 }
-                // Se não, abrir nova janela
+                // Se nao, abrir nova janela
                 if (clients.openWindow) {
                     return clients.openWindow(url);
                 }
@@ -156,27 +162,27 @@ self.addEventListener('notificationclick', event => {
     );
 });
 
-// Fechar notificação
-self.addEventListener('notificationclose', event => {
-    console.log('[SW] Notificação fechada:', event);
+// Fechar notificacao
+self.addEventListener('notificationclose', function(event) {
+    console.log('[SW] Notificacao fechada:', event);
 });
 
 // Fetch com cache fallback
-self.addEventListener('fetch', event => {
-    // Não cachear requisições de API
-    if (event.request.url.includes('/api/')) {
+self.addEventListener('fetch', function(event) {
+    // Nao cachear requisicoes de API
+    if (event.request.url.indexOf('/api/') !== -1) {
         return;
     }
     
     event.respondWith(
         caches.match(event.request)
-            .then(response => {
+            .then(function(response) {
                 if (response) {
                     return response;
                 }
                 return fetch(event.request);
             })
-            .catch(() => {
+            .catch(function() {
                 // Offline fallback
                 if (event.request.mode === 'navigate') {
                     return caches.match('/');

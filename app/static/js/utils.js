@@ -1,89 +1,116 @@
 /**
- * Funções utilitárias
+ * Funcoes utilitarias - ES5 Compativel (iOS 9+)
+ * Versao: 1.0.1 - 09/01/2026
  */
 
-// Formatar valor em Real
+// Formatar valor em Real (compativel com navegadores antigos)
 function formatarMoeda(valor) {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(valor);
+    if (typeof valor !== 'number') {
+        valor = parseFloat(valor) || 0;
+    }
+    
+    // Fallback para navegadores sem Intl
+    if (typeof Intl === 'undefined' || !Intl.NumberFormat) {
+        var fixo = valor.toFixed(2);
+        var partes = fixo.split('.');
+        var inteiro = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return 'R$ ' + inteiro + ',' + partes[1];
+    }
+    
+    try {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(valor);
+    } catch (e) {
+        var fixo = valor.toFixed(2);
+        var partes = fixo.split('.');
+        var inteiro = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return 'R$ ' + inteiro + ',' + partes[1];
+    }
 }
 
 // Formatar data e hora
 function formatarDataHora(dataStr) {
     if (!dataStr) return '';
-    const data = new Date(dataStr);
-    return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).format(data);
+    var data = new Date(dataStr);
+    
+    if (isNaN(data.getTime())) return '';
+    
+    var dia = ('0' + data.getDate()).slice(-2);
+    var mes = ('0' + (data.getMonth() + 1)).slice(-2);
+    var ano = data.getFullYear();
+    var hora = ('0' + data.getHours()).slice(-2);
+    var min = ('0' + data.getMinutes()).slice(-2);
+    
+    return dia + '/' + mes + '/' + ano + ' ' + hora + ':' + min;
 }
 
 // Formatar data
 function formatarData(dataStr) {
     if (!dataStr) return '';
-    const data = new Date(dataStr);
-    return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    }).format(data);
+    var data = new Date(dataStr);
+    
+    if (isNaN(data.getTime())) return '';
+    
+    var dia = ('0' + data.getDate()).slice(-2);
+    var mes = ('0' + (data.getMonth() + 1)).slice(-2);
+    var ano = data.getFullYear();
+    
+    return dia + '/' + mes + '/' + ano;
 }
 
 // Mostrar mensagem de sucesso
 function mostrarSucesso(mensagem) {
-    alert('✅ ' + mensagem);
+    alert('OK: ' + mensagem);
 }
 
 // Mostrar mensagem de erro
 function mostrarErro(mensagem) {
-    alert('❌ ' + mensagem);
+    alert('Erro: ' + mensagem);
 }
 
-// Confirmar ação
+// Confirmar acao
 function confirmar(mensagem) {
     return confirm(mensagem);
 }
 
-// Modal genérico
-function criarModal(titulo, conteudo, botoes = []) {
-    const modalId = 'modal-' + Date.now();
+// Modal generico
+function criarModal(titulo, conteudo, botoes) {
+    botoes = botoes || [];
+    var modalId = 'modal-' + Date.now();
     
-    const modal = document.createElement('div');
+    var modal = document.createElement('div');
     modal.id = modalId;
     modal.className = 'modal';
     
-    let botoesHtml = '';
-    botoes.forEach(botao => {
-        botoesHtml += `<button class="btn btn-${botao.tipo}" onclick="${botao.acao}">${botao.texto}</button>`;
-    });
+    var botoesHtml = '';
+    for (var i = 0; i < botoes.length; i++) {
+        var botao = botoes[i];
+        botoesHtml += '<button class="btn btn-' + botao.tipo + '" onclick="' + botao.acao + '">' + botao.texto + '</button>';
+    }
     
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>${titulo}</h3>
-                <button class="modal-close" onclick="fecharModal('${modalId}')">&times;</button>
-            </div>
-            <div class="modal-body">
-                ${conteudo}
-            </div>
-            ${botoesHtml ? `<div class="modal-footer">${botoesHtml}</div>` : ''}
-        </div>
-    `;
+    modal.innerHTML = '<div class="modal-content">' +
+        '<div class="modal-header">' +
+            '<h3>' + titulo + '</h3>' +
+            '<button class="modal-close" onclick="fecharModal(\'' + modalId + '\')">&times;</button>' +
+        '</div>' +
+        '<div class="modal-body">' + conteudo + '</div>' +
+        (botoesHtml ? '<div class="modal-footer">' + botoesHtml + '</div>' : '') +
+    '</div>';
     
-    document.getElementById('modalsContainer').appendChild(modal);
+    var container = document.getElementById('modalsContainer');
+    if (container) {
+        container.appendChild(modal);
+    }
     
     // Mostrar modal
-    setTimeout(() => {
+    setTimeout(function() {
         modal.classList.add('show');
     }, 10);
     
     // Fechar ao clicar fora
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', function(e) {
         if (e.target === modal) {
             fecharModal(modalId);
         }
@@ -93,11 +120,13 @@ function criarModal(titulo, conteudo, botoes = []) {
 }
 
 function fecharModal(modalId) {
-    const modal = document.getElementById(modalId);
+    var modal = document.getElementById(modalId);
     if (modal) {
         modal.classList.remove('show');
-        setTimeout(() => {
-            modal.remove();
+        setTimeout(function() {
+            if (modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
         }, 300);
     }
 }
@@ -114,7 +143,7 @@ function getDataHoraAtual() {
 
 // Calcular data passada
 function getDataPassada(dias) {
-    const data = new Date();
+    var data = new Date();
     data.setDate(data.getDate() - dias);
     return data.toISOString().split('T')[0];
 }
@@ -122,38 +151,46 @@ function getDataPassada(dias) {
 // Exportar para CSV
 function exportarCSV(dados, colunas, nomeArquivo) {
     if (!dados || dados.length === 0) {
-        mostrarErro('Não há dados para exportar');
+        mostrarErro('Nao ha dados para exportar');
         return;
     }
     
-    // Cabeçalho
-    let csv = colunas.map(c => c.titulo).join(';') + '\n';
+    // Cabecalho
+    var cabecalhos = [];
+    for (var c = 0; c < colunas.length; c++) {
+        cabecalhos.push(colunas[c].titulo);
+    }
+    var csv = cabecalhos.join(';') + '\n';
     
     // Dados
-    dados.forEach(item => {
-        const linha = colunas.map(c => {
-            let valor = item[c.campo];
+    for (var i = 0; i < dados.length; i++) {
+        var item = dados[i];
+        var linha = [];
+        
+        for (var j = 0; j < colunas.length; j++) {
+            var col = colunas[j];
+            var valor = item[col.campo];
             
-            // Formatar valor se necessário
-            if (c.formato === 'moeda') {
+            // Formatar valor se necessario
+            if (col.formato === 'moeda') {
                 valor = formatarMoeda(valor);
-            } else if (c.formato === 'data') {
+            } else if (col.formato === 'data') {
                 valor = formatarData(valor);
-            } else if (c.formato === 'dataHora') {
+            } else if (col.formato === 'dataHora') {
                 valor = formatarDataHora(valor);
             }
             
             // Escapar valores
-            return `"${valor || ''}"`;
-        });
+            linha.push('"' + (valor || '') + '"');
+        }
         
         csv += linha.join(';') + '\n';
-    });
+    }
     
     // Download
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    var url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
     link.setAttribute('download', nomeArquivo);
@@ -168,11 +205,13 @@ function exportarCSV(dados, colunas, nomeArquivo) {
 
 // Debounce para inputs
 function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
+    var timeout;
+    return function() {
+        var context = this;
+        var args = arguments;
+        var later = function() {
             clearTimeout(timeout);
-            func(...args);
+            func.apply(context, args);
         };
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);

@@ -1,98 +1,122 @@
 /**
- * API Client
+ * API Client - ES5 Compativel (iOS 9+)
+ * Versao: 1.0.1 - 09/01/2026
  */
 
-const API_BASE = '/api';
+var API_BASE = '/api';
 
-const API = {
-    // Configuração
-    async getConfiguracao() {
-        const res = await fetch(`${API_BASE}/configuracao`);
-        return await res.json();
+var API = {
+    // Configuracao
+    getConfiguracao: function() {
+        return fetch(API_BASE + '/configuracao')
+            .then(function(res) {
+                return res.json();
+            });
     },
     
-    async updateConfiguracao(data) {
-        const res = await fetch(`${API_BASE}/configuracao`, {
+    updateConfiguracao: function(data) {
+        return fetch(API_BASE + '/configuracao', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
+        }).then(function(res) {
+            return res.json();
         });
-        return await res.json();
     },
     
     // Caixa
-    async caixaStatus() {
-        const res = await fetch(`${API_BASE}/caixa/status`);
-        return await res.json();
+    caixaStatus: function() {
+        return fetch(API_BASE + '/caixa/status')
+            .then(function(res) {
+                return res.json();
+            });
     },
     
-    async abrirCaixa(data) {
-        const res = await fetch(`${API_BASE}/caixa/abrir`, {
+    abrirCaixa: function(data) {
+        return fetch(API_BASE + '/caixa/abrir', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
+        }).then(function(res) {
+            return res.json();
         });
-        return await res.json();
     },
     
-    async fecharCaixa(data) {
-        const res = await fetch(`${API_BASE}/caixa/fechar`, {
+    fecharCaixa: function(data) {
+        return fetch(API_BASE + '/caixa/fechar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
+        }).then(function(res) {
+            return res.json();
         });
-        return await res.json();
     },
     
-    async painelCaixa() {
-        const res = await fetch(`${API_BASE}/caixa/painel`);
-        return await res.json();
+    painelCaixa: function() {
+        return fetch(API_BASE + '/caixa/painel')
+            .then(function(res) {
+                return res.json();
+            });
     },
     
-    async resumoFechamento() {
-        const res = await fetch(`${API_BASE}/caixa/resumo-fechamento`);
-        return await res.json();
+    resumoFechamento: function() {
+        return fetch(API_BASE + '/caixa/resumo-fechamento')
+            .then(function(res) {
+                return res.json();
+            });
     },
     
-    // Lançamentos
-    async criarLancamento(data) {
-        const res = await fetch(`${API_BASE}/lancamento`, {
+    // Lancamentos
+    criarLancamento: function(data) {
+        return fetch(API_BASE + '/lancamento', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
+        }).then(function(res) {
+            return res.json();
         });
-        return await res.json();
     },
     
-    async deletarLancamento(id) {
-        const res = await fetch(`${API_BASE}/lancamento/${id}`, {
+    deletarLancamento: function(id) {
+        return fetch(API_BASE + '/lancamento/' + id, {
             method: 'DELETE'
+        }).then(function(res) {
+            return res.json();
         });
-        return await res.json();
     },
     
-    async listarLancamentos(filtros = {}) {
-        const params = new URLSearchParams(filtros);
-        const res = await fetch(`${API_BASE}/lancamentos?${params}`);
-        return await res.json();
+    listarLancamentos: function(filtros) {
+        filtros = filtros || {};
+        var params = new URLSearchParams(filtros);
+        return fetch(API_BASE + '/lancamentos?' + params.toString())
+            .then(function(res) {
+                return res.json();
+            });
     },
     
     // Caixas
-    async listarCaixas(filtros = {}) {
-        const params = new URLSearchParams(filtros);
-        const res = await fetch(`${API_BASE}/caixas?${params}`);
-        return await res.json();
+    listarCaixas: function(filtros) {
+        filtros = filtros || {};
+        var params = new URLSearchParams(filtros);
+        return fetch(API_BASE + '/caixas?' + params.toString())
+            .then(function(res) {
+                return res.json();
+            });
     },
     
-    async detalhesCaixa(id) {
-        const res = await fetch(`${API_BASE}/caixa/${id}`);
-        return await res.json();
+    detalhesCaixa: function(id) {
+        return fetch(API_BASE + '/caixa/' + id)
+            .then(function(res) {
+                return res.json();
+            });
     },
     
-    // Relatórios
-    async relatorioResumo(dataInicio, dataFim) {
-        const params = new URLSearchParams({ data_inicio: dataInicio, data_fim: dataFim });
-        const res = await fetch(`${API_BASE}/relatorio/resumo?${params}`);
-        return await res.json();
+    // Relatorios
+    relatorioResumo: function(dataInicio, dataFim) {
+        var params = new URLSearchParams({ data_inicio: dataInicio, data_fim: dataFim });
+        return fetch(API_BASE + '/relatorio/resumo?' + params.toString())
+            .then(function(res) {
+                return res.json();
+            });
     }
 };

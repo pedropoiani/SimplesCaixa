@@ -1,58 +1,73 @@
 /**
- * Controle da página de configurações
+ * Controle da pagina de configuracoes
+ * ES5 Compativel (iOS 9+)
+ * Versao: 1.0.1 - 09/01/2026
  */
 
-let formasPagamentoAtual = [];
+var formasPagamentoAtual = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
-    await carregarConfiguracao();
+document.addEventListener('DOMContentLoaded', function() {
+    carregarConfiguracao();
 });
 
-async function carregarConfiguracao() {
-    try {
-        const config = await API.getConfiguracao();
-        
-        document.getElementById('configNomeLoja').value = config.nome_loja;
-        document.getElementById('configResponsavel').value = config.responsavel;
-        
-        formasPagamentoAtual = config.formas_pagamento;
-        renderizarFormasPagamento();
-    } catch (error) {
-        console.error('Erro ao carregar configuração:', error);
-        mostrarErro('Erro ao carregar configurações');
-    }
+function carregarConfiguracao() {
+    API.getConfiguracao()
+        .then(function(config) {
+            var nomeLoja = document.getElementById('configNomeLoja');
+            var responsavel = document.getElementById('configResponsavel');
+            
+            if (nomeLoja) nomeLoja.value = config.nome_loja || '';
+            if (responsavel) responsavel.value = config.responsavel || '';
+            
+            formasPagamentoAtual = config.formas_pagamento || [];
+            renderizarFormasPagamento();
+        })
+        .catch(function(error) {
+            console.error('Erro ao carregar configuracao:', error);
+            mostrarErro('Erro ao carregar configuracoes');
+        });
 }
 
 function renderizarFormasPagamento() {
-    const container = document.getElementById('formasPagamentoLista');
+    var container = document.getElementById('formasPagamentoLista');
+    if (!container) return;
     
     if (formasPagamentoAtual.length === 0) {
         container.innerHTML = '<p class="text-center">Nenhuma forma de pagamento cadastrada</p>';
         return;
     }
     
-    container.innerHTML = formasPagamentoAtual.map((forma, index) => `
-        <div class="forma-pagamento-item">
-            <span>${forma}</span>
-            <button type="button" class="btn btn-sm btn-danger" onclick="removerFormaPagamento(${index})">
-                🗑️ Remover
-            </button>
-        </div>
-    `).join('');
+    var html = '';
+    for (var i = 0; i < formasPagamentoAtual.length; i++) {
+        var forma = formasPagamentoAtual[i];
+        html += '<div class="forma-pagamento-item">' +
+            '<span>' + forma + '</span>' +
+            '<button type="button" class="btn btn-sm btn-danger" onclick="removerFormaPagamento(' + i + ')">' +
+                'Remover' +
+            '</button>' +
+        '</div>';
+    }
+    
+    container.innerHTML = html;
 }
 
 function adicionarFormaPagamento() {
-    const input = document.getElementById('novaFormaPagamento');
-    const forma = input.value.trim();
+    var input = document.getElementById('novaFormaPagamento');
+    if (!input) return;
+    
+    var forma = input.value.trim();
     
     if (!forma) {
         mostrarErro('Digite o nome da forma de pagamento');
         return;
     }
     
-    if (formasPagamentoAtual.includes(forma)) {
-        mostrarErro('Esta forma de pagamento já existe');
-        return;
+    // Verificar se ja existe
+    for (var i = 0; i < formasPagamentoAtual.length; i++) {
+        if (formasPagamentoAtual[i] === forma) {
+            mostrarErro('Esta forma de pagamento ja existe');
+            return;
+        }
     }
     
     formasPagamentoAtual.push(forma);
@@ -69,14 +84,17 @@ function removerFormaPagamento(index) {
     renderizarFormasPagamento();
 }
 
-async function salvarConfiguracao(event) {
-    event.preventDefault();
+function salvarConfiguracao(event) {
+    if (event) event.preventDefault();
     
-    const nomeLoja = document.getElementById('configNomeLoja').value;
-    const responsavel = document.getElementById('configResponsavel').value;
+    var nomeLojaEl = document.getElementById('configNomeLoja');
+    var responsavelEl = document.getElementById('configResponsavel');
+    
+    var nomeLoja = nomeLojaEl ? nomeLojaEl.value : '';
+    var responsavel = responsavelEl ? responsavelEl.value : '';
     
     if (!nomeLoja || !responsavel) {
-        mostrarErro('Preencha todos os campos obrigatórios');
+        mostrarErro('Preencha todos os campos obrigatorios');
         return;
     }
     
@@ -85,64 +103,65 @@ async function salvarConfiguracao(event) {
         return;
     }
     
-    const dados = {
+    var dados = {
         nome_loja: nomeLoja,
         responsavel: responsavel,
         formas_pagamento: formasPagamentoAtual
     };
     
-    try {
-        const resultado = await API.updateConfiguracao(dados);
-        
-        if (resultado.success) {
-            mostrarSucesso('Configurações salvas com sucesso!');
-        } else {
-            mostrarErro(resultado.message);
-        }
-    } catch (error) {
-        console.error('Erro ao salvar configuração:', error);
-        mostrarErro('Erro ao salvar configurações');
-    }
+    API.updateConfiguracao(dados)
+        .then(function(resultado) {
+            if (resultado.success) {
+                mostrarSucesso('Configuracoes salvas com sucesso!');
+            } else {
+                mostrarErro(resultado.message);
+            }
+        })
+        .catch(function(error) {
+            console.error('Erro ao salvar configuracao:', error);
+            mostrarErro('Erro ao salvar configuracoes');
+        });
 }
 
-async function testarNotificacao(tipo) {
-    const resultadoDiv = document.getElementById('resultadoTeste');
-    resultadoDiv.innerHTML = '<p class="text-info">⏳ Enviando notificação de teste...</p>';
+function testarNotificacao(tipo) {
+    var resultadoDiv = document.getElementById('resultadoTeste');
+    if (resultadoDiv) {
+        resultadoDiv.innerHTML = '<p class="text-info">Enviando notificacao de teste...</p>';
+    }
     
-    try {
-        const response = await fetch('/api/push/test', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ tipo: tipo })
-        });
-        
-        const resultado = await response.json();
+    fetch('/api/push/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tipo: tipo })
+    })
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(resultado) {
+        if (!resultadoDiv) return;
         
         if (resultado.success) {
-            resultadoDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <strong>✅ Sucesso!</strong><br>
-                    ${resultado.message}<br>
-                    <small>Enviadas: ${resultado.resultado.enviados} | Expiradas: ${resultado.resultado.expirados} | Total: ${resultado.resultado.total}</small>
-                </div>
-            `;
+            resultadoDiv.innerHTML = '<div class="alert alert-success">' +
+                '<strong>Sucesso!</strong><br>' +
+                resultado.message + '<br>' +
+                '<small>Enviadas: ' + resultado.resultado.enviados + ' | Expiradas: ' + resultado.resultado.expirados + ' | Total: ' + resultado.resultado.total + '</small>' +
+            '</div>';
         } else {
-            resultadoDiv.innerHTML = `
-                <div class="alert alert-danger">
-                    <strong>❌ Erro!</strong><br>
-                    ${resultado.message}
-                </div>
-            `;
+            resultadoDiv.innerHTML = '<div class="alert alert-danger">' +
+                '<strong>Erro!</strong><br>' +
+                resultado.message +
+            '</div>';
         }
-    } catch (error) {
-        console.error('Erro ao testar notificação:', error);
-        resultadoDiv.innerHTML = `
-            <div class="alert alert-danger">
-                <strong>❌ Erro!</strong><br>
-                Não foi possível enviar a notificação de teste.
-            </div>
-        `;
-    }
+    })
+    .catch(function(error) {
+        console.error('Erro ao testar notificacao:', error);
+        if (resultadoDiv) {
+            resultadoDiv.innerHTML = '<div class="alert alert-danger">' +
+                '<strong>Erro!</strong><br>' +
+                'Nao foi possivel enviar a notificacao de teste.' +
+            '</div>';
+        }
+    });
 }
