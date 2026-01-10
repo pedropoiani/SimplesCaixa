@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar requirements
@@ -25,5 +26,9 @@ ENV PYTHONUNBUFFERED=1
 # Expor porta
 EXPOSE 5000
 
-# Comando de inicialização
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "run:app"]
+# Health check para Docker
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Comando de inicialização com melhor tratamento de erros
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 --access-logfile - --error-logfile - run:app"]

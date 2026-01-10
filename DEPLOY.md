@@ -83,16 +83,21 @@ ssh pedropoiani@192.168.1.45
 /home/pedropoiani/simplescaixa
 ```
 
-### Comando de Deploy (Pull + Restart)
+### Comando de Deploy (Pull + Rebuild)
 ```bash
 cd /home/pedropoiani/simplescaixa && \
 git pull origin main && \
-docker-compose restart web
+bash deploy.sh
 ```
 
 ### Verificar Status
 ```bash
 ssh pedropoiani@192.168.1.45 "cd simplescaixa && docker-compose ps"
+```
+
+### Verificar Saúde
+```bash
+curl http://192.168.1.45:5000/health
 ```
 
 ### Ver Logs
