@@ -2,27 +2,39 @@
  * Service Worker para Push Notifications
  * PDV-MF Sistema de Caixa
  * ES5 Compativel
- * Versao: 1.0.1 - 09/01/2026
+ * Versao: 1.0.2 - 21/01/2026
+ * 
+ * Corrigido: Compatibilidade com Chrome Mobile
  */
 
-var CACHE_NAME = 'pdv-mf-v1.0.1';
+var CACHE_NAME = 'pdv-mf-v1.0.2';
 var urlsToCache = [
     '/',
     '/gerente',
     '/static/css/style.css',
     '/static/js/api.js',
-    '/static/js/utils.js'
+    '/static/js/utils.js',
+    '/static/img/icon-192.png',
+    '/static/img/badge-72.png'
 ];
 
 // Instalacao do Service Worker
 self.addEventListener('install', function(event) {
-    console.log('[SW] Instalando Service Worker...');
+    console.log('[SW] Instalando Service Worker v1.0.2...');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(function(cache) {
                 console.log('[SW] Cache aberto');
-                return cache.addAll(urlsToCache);
+                // Usar addAll com fallback para arquivos que podem nao existir
+                return Promise.all(
+                    urlsToCache.map(function(url) {
+                        return cache.add(url).catch(function(err) {
+                            console.log('[SW] Falha ao cachear:', url, err);
+                            return Promise.resolve();
+                        });
+                    })
+                );
             })
             .catch(function(err) {
                 console.log('[SW] Erro ao abrir cache:', err);
@@ -54,7 +66,7 @@ self.addEventListener('activate', function(event) {
 
 // Receber notificacao push
 self.addEventListener('push', function(event) {
-    console.log('[SW] Push recebido:', event);
+    console.log('[SW] Push recebido');
     
     var data = {
         title: 'PDV-MF',
@@ -70,6 +82,7 @@ self.addEventListener('push', function(event) {
     if (event.data) {
         try {
             var payload = event.data.json();
+            console.log('[SW] Payload recebido:', payload);
             // Merge objects manually for ES5
             for (var key in payload) {
                 if (payload.hasOwnProperty(key)) {
@@ -77,6 +90,7 @@ self.addEventListener('push', function(event) {
                 }
             }
         } catch (e) {
+            console.log('[SW] Erro ao parsear payload, usando texto:', e);
             data.body = event.data.text();
         }
     }
@@ -89,11 +103,20 @@ self.addEventListener('push', function(event) {
         data: data.data,
         tag: data.tag,
         requireInteraction: data.requireInteraction,
+        renotify: true,  // Permite notificacoes mesmo com mesma tag
         actions: getActionsForType(data.data ? data.data.tipo : null)
     };
     
+    console.log('[SW] Exibindo notificacao:', data.title, options);
+    
     event.waitUntil(
         self.registration.showNotification(data.title, options)
+            .then(function() {
+                console.log('[SW] Notificacao exibida com sucesso');
+            })
+            .catch(function(err) {
+                console.error('[SW] Erro ao exibir notificacao:', err);
+            })
     );
 });
 

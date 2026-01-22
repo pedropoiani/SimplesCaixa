@@ -312,23 +312,43 @@ function mostrarConfirmacao(titulo, mensagem, onConfirm) {
 
 // Gerar teclado inline compacto (2 linhas)
 function gerarTecladoInline(btnConfirmarTexto, btnConfirmarOnclick) {
-    return '<div class="teclado-inline">' +
-        '<div class="teclado-linha">' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'1\')">1</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'2\')">2</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'3\')">3</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'4\')">4</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'5\')">5</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'6\')">6</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'7\')">7</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'8\')">8</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'9\')">9</button>' +
-            '<button class="tecla-inline" onclick="teclarNumero(\'0\')">0</button>' +
-            '<button class="tecla-inline limpar" onclick="limparTeclado()">C</button>' +
-            '<button class="tecla-inline backspace" onclick="apagarUltimo()">⌫</button>' +
-        '</div>' +
+    var teclas = [
+        ['7', '8', '9'],
+        ['4', '5', '6'],
+        ['1', '2', '3'],
+        ['0', 'C', '⌫']
+    ];
+
+    var html = '<div class="teclado-inline">' +
+        '<div class="teclado-inline-grid">';
+
+    for (var i = 0; i < teclas.length; i++) {
+        html += '<div class="linha">';
+        for (var j = 0; j < teclas[i].length; j++) {
+            var tecla = teclas[i][j];
+            var acao = '';
+            var classe = 'tecla-inline';
+
+            if (tecla === 'C') {
+                acao = 'limparTeclado()';
+                classe += ' limpar';
+            } else if (tecla === '⌫') {
+                acao = 'apagarUltimo()';
+                classe += ' backspace';
+            } else {
+                acao = 'teclarNumero(\'' + tecla + '\')';
+            }
+
+            html += '<button class="' + classe + '" onclick="' + acao + '">' + tecla + '</button>';
+        }
+        html += '</div>';
+    }
+
+    html += '</div>' +
         '<button class="btn-confirmar-inline" onclick="' + btnConfirmarOnclick + '">' + btnConfirmarTexto + '</button>' +
     '</div>';
+
+    return html;
 }
 
 function formatarValorDisplay(valor) {
@@ -399,7 +419,7 @@ function modalAbrirCaixa() {
         '</div>' +
         '<div class="form-group-pdv">' +
             '<label class="input-valor-label">TROCO INICIAL</label>' +
-            '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
+            '<input type="tel" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="decimal" autocomplete="off" autocorrect="off" pattern="[0-9]*">' +
         '</div>' +
         gerarTecladoInline('🔓 ABRIR CAIXA', 'confirmarAbrirCaixa()') +
     '</div>';
@@ -1030,11 +1050,15 @@ function carregarPainel() {
                 var totalEntradasEl = document.getElementById('totalEntradas');
                 var totalSaidasEl = document.getElementById('totalSaidas');
                 var saldoAtualEl = document.getElementById('saldoAtual');
+                var previsaoFechamentoEl = document.getElementById('previsaoFechamento');
                 
                 if (trocoInicialEl) trocoInicialEl.textContent = formatarMoeda(totais.troco_inicial);
                 if (totalEntradasEl) totalEntradasEl.textContent = formatarMoeda(totais.total_entradas);
                 if (totalSaidasEl) totalSaidasEl.textContent = formatarMoeda(totais.total_saidas);
                 if (saldoAtualEl) saldoAtualEl.textContent = formatarMoeda(totais.saldo_atual);
+                if (previsaoFechamentoEl) {
+                    atualizarPrevisaoFechamento(previsaoFechamentoEl);
+                }
                 
                 // Atualizar objeto caixaAtual com totais
                 caixaAtual.total_entradas = totais.total_entradas;
@@ -1044,6 +1068,21 @@ function carregarPainel() {
         })
         .catch(function(error) {
             console.error('Erro ao carregar painel:', error);
+        });
+}
+
+function atualizarPrevisaoFechamento(elemento) {
+    API.resumoFechamento()
+        .then(function(resumoFechamento) {
+            if (resumoFechamento.success) {
+                elemento.textContent = formatarMoeda(resumoFechamento.dinheiro_esperado || 0);
+            } else {
+                elemento.textContent = formatarMoeda(0);
+            }
+        })
+        .catch(function(error) {
+            console.error('Erro ao carregar previsao de fechamento:', error);
+            elemento.textContent = formatarMoeda(0);
         });
 }
 

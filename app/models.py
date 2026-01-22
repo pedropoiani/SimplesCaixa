@@ -82,6 +82,7 @@ class Lancamento(db.Model):
     valor_recebido = db.Column(db.Float)  # Para vendas em dinheiro
     troco = db.Column(db.Float)  # Troco calculado
     descricao = db.Column(db.Text)
+    estorno = db.relationship('Estorno', back_populates='lancamento', uselist=False, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -94,7 +95,26 @@ class Lancamento(db.Model):
             'valor': self.valor,
             'valor_recebido': self.valor_recebido,
             'troco': self.troco,
-            'descricao': self.descricao
+            'descricao': self.descricao,
+            'estornado': bool(self.estorno),
+            'motivo_estorno': self.estorno.motivo if self.estorno else None
+        }
+
+
+class Estorno(db.Model):
+    __tablename__ = 'estorno'
+    id = db.Column(db.Integer, primary_key=True)
+    lancamento_id = db.Column(db.Integer, db.ForeignKey('lancamento.id'), nullable=False, unique=True)
+    motivo = db.Column(db.Text, nullable=False)
+    data_hora = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    lancamento = db.relationship('Lancamento', back_populates='estorno')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'lancamento_id': self.lancamento_id,
+            'motivo': self.motivo,
+            'data_hora': self.data_hora.isoformat() if self.data_hora else None
         }
 
 

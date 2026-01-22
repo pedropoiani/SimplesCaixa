@@ -2,7 +2,7 @@
 Rotas da aplicação
 """
 from flask import Blueprint, render_template, request, jsonify, Response
-from app.models import db, Caixa, Lancamento, Configuracao, PushSubscription
+from app.models import db, Caixa, Lancamento, Configuracao, PushSubscription, Estorno
 from app.push_notifications import (
     enviar_para_todos, notificar_sangria, notificar_abertura, 
     notificar_fechamento, notificar_resumo_diario, get_vapid_public_key
@@ -166,7 +166,7 @@ def painel_caixa():
         caixa_id=caixa.id,
         tipo='entrada',
         categoria='venda'
-    ).all()
+    ).filter(Lancamento.estorno == None).all()
     
     resumo_pagamentos = {}
     for venda in vendas:
@@ -178,6 +178,8 @@ def painel_caixa():
     
     resumo_categorias = {}
     for lanc in lancamentos:
+        if lanc.estorno:
+            continue
         cat = lanc.categoria
         resumo_categorias[cat] = resumo_categorias.get(cat, 0) + lanc.valor
     
@@ -211,8 +213,11 @@ def resumo_fechamento():
     total_suprimentos = 0
     total_outros_entrada = 0
     total_outros_saida = 0
+    total_estornos_dinheiro = 0
     
     for lanc in lancamentos:
+        if lanc.estorno:
+            continue
         if lanc.categoria == 'venda':
             forma = (lanc.forma_pagamento or '').lower()
             if 'dinheiro' in forma:
@@ -237,6 +242,10 @@ def resumo_fechamento():
                 total_outros_entrada += lanc.valor
             else:
                 total_outros_saida += lanc.valor
+        elif lanc.categoria == 'estorno':
+            forma = (lanc.forma_pagamento or '').lower()
+            if 'dinheiro' in forma:
+                total_estornos_dinheiro += lanc.valor
     
     # Total de vendas
     total_vendas = vendas_dinheiro + vendas_pix + vendas_cartao_credito + vendas_cartao_debito + vendas_outras
@@ -251,6 +260,7 @@ def resumo_fechamento():
         + total_suprimentos
         + total_outros_entrada
         - total_outros_saida
+        - total_estornos_dinheiro
     )
     
     return jsonify({
@@ -461,6 +471,7 @@ def relatorio_resumo():
     ).filter(
         and_(
             Lancamento.categoria == 'venda',
+            Lancamento.estorno == None,
             Lancamento.data_hora >= data_inicio_dt,
             Lancamento.data_hora <= data_fim_dt
         )
@@ -652,58 +663,104 @@ def testar_push():
 
 @api_bp.route('/gerente/resumo-hoje', methods=['GET'])
 def resumo_hoje():
-    """Resumo do dia atual para o painel do gerente"""
+    """Resumo por data para o painel do gerente"""
+    data_param = request.args.get('data')
     hoje = datetime.now().date()
-    inicio_dia = datetime.combine(hoje, datetime.min.time())
-    fim_dia = datetime.combine(hoje, datetime.max.time())
-    
-    # Caixas de hoje
-    caixas_hoje = Caixa.query.filter(
+
+    if data_param:
+        try:
+            dia_requisitado = datetime.fromisoformat(data_param).date()
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Data inválida'}), 400
+    else:
+        dia_requisitado = hoje
+
+    inicio_dia = datetime.combine(dia_requisitado, datetime.min.time())
+    fim_dia = datetime.combine(dia_requisitado, datetime.max.time())
+
+    caixas_dia = Caixa.query.filter(
         Caixa.data_abertura >= inicio_dia,
         Caixa.data_abertura <= fim_dia
     ).all()
-    
-    # Lançamentos de hoje
+
     lancamentos = Lancamento.query.filter(
         Lancamento.data_hora >= inicio_dia,
         Lancamento.data_hora <= fim_dia
     ).all()
-    
-    # Totais
+
     vendas_dinheiro = 0
     vendas_pix = 0
     vendas_cartao_credito = 0
     vendas_cartao_debito = 0
+    vendas_outras = 0
     total_sangrias = 0
     total_suprimentos = 0
-    
+    total_troco_dado = 0
+    total_outros_entrada = 0
+    total_outros_saida = 0
+    total_estornos_dinheiro = 0
+
     for lanc in lancamentos:
+        if lanc.estorno:
+            continue
         if lanc.categoria == 'venda':
             forma = (lanc.forma_pagamento or '').lower()
             if 'dinheiro' in forma:
                 vendas_dinheiro += lanc.valor
+                if lanc.troco and lanc.troco > 0:
+                    total_troco_dado += lanc.troco
             elif 'pix' in forma:
                 vendas_pix += lanc.valor
             elif 'crédito' in forma or 'credito' in forma:
                 vendas_cartao_credito += lanc.valor
             elif 'débito' in forma or 'debito' in forma:
                 vendas_cartao_debito += lanc.valor
+            else:
+                vendas_outras += lanc.valor
         elif lanc.categoria == 'sangria':
             total_sangrias += lanc.valor
         elif lanc.categoria == 'suprimento':
             total_suprimentos += lanc.valor
-    
-    total_vendas = vendas_dinheiro + vendas_pix + vendas_cartao_credito + vendas_cartao_debito
-    
-    # Status do caixa atual
+        elif lanc.categoria == 'estorno':
+            forma = (lanc.forma_pagamento or '').lower()
+            if 'dinheiro' in forma:
+                total_estornos_dinheiro += lanc.valor
+        elif lanc.categoria == 'outros':
+            if lanc.tipo == 'entrada':
+                total_outros_entrada += lanc.valor
+            else:
+                total_outros_saida += lanc.valor
+
+    total_vendas = (
+        vendas_dinheiro + vendas_pix + vendas_cartao_credito +
+        vendas_cartao_debito + vendas_outras
+    )
+
+    troco_inicial_total = sum((c.troco_inicial or 0) for c in caixas_dia)
+    dinheiro_esperado = (
+        troco_inicial_total
+        + vendas_dinheiro
+        - total_troco_dado
+        - total_sangrias
+        + total_suprimentos
+        + total_outros_entrada
+        - total_outros_saida
+        - total_estornos_dinheiro
+    )
+
     caixa_atual = Caixa.query.filter_by(status='aberto').first()
-    
+
     return jsonify({
         'success': True,
-        'data': hoje.isoformat(),
+        'data': dia_requisitado.isoformat(),
+        'periodo': {
+            'data': dia_requisitado.isoformat(),
+            'display': dia_requisitado.strftime('%d/%m/%Y')
+        },
         'caixa_aberto': caixa_atual is not None,
         'caixa_atual': caixa_atual.to_dict() if caixa_atual else None,
         'total_vendas': total_vendas,
+        'saldo_final_dinheiro': dinheiro_esperado,
         'vendas': {
             'dinheiro': vendas_dinheiro,
             'pix': vendas_pix,
@@ -712,9 +769,12 @@ def resumo_hoje():
         },
         'movimentacoes': {
             'sangrias': total_sangrias,
-            'suprimentos': total_suprimentos
+            'suprimentos': total_suprimentos,
+            'troco_dado': total_troco_dado,
+            'outros_entrada': total_outros_entrada,
+            'outros_saida': total_outros_saida
         },
-        'qtd_caixas': len(caixas_hoje),
+        'qtd_caixas': len(caixas_dia),
         'qtd_lancamentos': len(lancamentos)
     })
 
@@ -731,6 +791,56 @@ def ultimas_movimentacoes():
     return jsonify({
         'success': True,
         'lancamentos': [l.to_dict() for l in lancamentos]
+    })
+
+
+@api_bp.route('/gerente/estornar-venda', methods=['POST'])
+def estornar_venda():
+    """Registra o estorno de uma venda"""
+    data = request.json or {}
+    lancamento_id = data.get('lancamento_id')
+    motivo = (data.get('motivo') or '').strip()
+
+    if not lancamento_id:
+        return jsonify({'success': False, 'message': 'ID da venda obrigatório'}), 400
+    if not motivo:
+        return jsonify({'success': False, 'message': 'Motivo do estorno obrigatório'}), 400
+
+    lancamento = Lancamento.query.get(lancamento_id)
+
+    if not lancamento or lancamento.categoria != 'venda' or lancamento.tipo != 'entrada':
+        return jsonify({'success': False, 'message': 'Venda não encontrada'}), 404
+
+    if lancamento.estorno:
+        return jsonify({'success': False, 'message': 'Venda já estornada'}), 400
+
+    caixa = lancamento.caixa
+    if not caixa:
+        return jsonify({'success': False, 'message': 'Caixa associado à venda não encontrado'}), 400
+
+    estorno_lancamento = Lancamento(
+        caixa_id=caixa.id,
+        tipo='saida',
+        categoria='estorno',
+        valor=lancamento.valor,
+        forma_pagamento=lancamento.forma_pagamento,
+        descricao=f'Estorno da venda #{lancamento.id}: {motivo}'
+    )
+
+    estorno_registro = Estorno(
+        lancamento=lancamento,
+        motivo=motivo
+    )
+
+    db.session.add(estorno_lancamento)
+    db.session.add(estorno_registro)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'Venda estornada com sucesso',
+        'venda': lancamento.to_dict(),
+        'estorno': estorno_registro.to_dict()
     })
 
 
@@ -769,6 +879,7 @@ def resumo_semana():
         total_vendas = db.session.query(func.sum(Lancamento.valor)).filter(
             and_(
                 Lancamento.categoria == 'venda',
+                Lancamento.estorno == None,
                 Lancamento.data_hora >= inicio_dia,
                 Lancamento.data_hora <= fim_dia
             )
@@ -800,7 +911,7 @@ def enviar_resumo_diario():
         Lancamento.data_hora <= fim_dia
     ).all()
     
-    total_vendas = sum(l.valor for l in lancamentos if l.categoria == 'venda')
+    total_vendas = sum(l.valor for l in lancamentos if l.categoria == 'venda' and not l.estorno)
     total_sangrias = sum(l.valor for l in lancamentos if l.categoria == 'sangria')
     total_suprimentos = sum(l.valor for l in lancamentos if l.categoria == 'suprimento')
     
@@ -898,6 +1009,7 @@ def relatorio_periodo_pdf():
     ).filter(
         and_(
             Lancamento.categoria == 'venda',
+            Lancamento.estorno == None,
             Lancamento.data_hora >= data_inicio_dt,
             Lancamento.data_hora <= data_fim_dt
         )
@@ -965,6 +1077,8 @@ def resumo_diario_pdf():
     total_suprimentos = 0
     
     for lanc in lancamentos:
+        if lanc.estorno:
+            continue
         if lanc.categoria == 'venda':
             forma = (lanc.forma_pagamento or '').lower()
             if 'dinheiro' in forma:

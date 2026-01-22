@@ -82,6 +82,40 @@
             background: #c01c28;
             color: white;
         }
+
+        .filtro-data {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filtro-data label {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+        }
+
+        .filtro-data input {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            padding: 0.45rem 0.75rem;
+            max-width: 160px;
+            width: 100%;
+        }
+
+        .filtro-data input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
         
         /* Status do Caixa */
         .caixa-status-card {
@@ -231,7 +265,8 @@
             margin-bottom: 0.5rem;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            gap: 0.75rem;
         }
         
         .mov-item.entrada {
@@ -269,6 +304,35 @@
         
         .mov-valor.entrada { color: #26a269; }
         .mov-valor.saida { color: #c01c28; }
+
+        .mov-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.35rem;
+        }
+
+        .mov-estorno {
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.6);
+            margin-top: 0.35rem;
+        }
+
+        .estornar-btn {
+            border: none;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            color: white;
+            padding: 0.35rem 0.95rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .estornar-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
         
         /* Gráfico Semanal Simples */
         .grafico-semana {
@@ -506,6 +570,10 @@
             <button class="header-btn success" onclick="baixarPDF()">📥 PDF</button>
             <a href="/" class="header-btn danger" style="text-decoration: none;">🏠 Caixa</a>
         </div>
+        <div class="filtro-data">
+            <label for="filtroData">📅 Filtrar por data</label>
+            <input type="date" id="filtroData">
+        </div>
     </header>
     
     <!-- Status do Caixa -->
@@ -553,6 +621,9 @@
                 <span>🔔</span>
                 <span>Ativar Notificações</span>
             </button>
+            <p style="font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem; text-align: center;">
+                Receba alertas de sangrias, abertura e fechamento de caixa
+            </p>
         </div>
         <div id="notifConfig" style="display: none;">
             <div class="notif-toggle">
@@ -586,6 +657,9 @@
             <button class="acao-btn" style="width: 100%; margin-top: 0.75rem; background: rgba(255,255,255,0.1);" onclick="testarNotificacao()">
                 🔔 Testar Notificação
             </button>
+            <button class="acao-btn" style="width: 100%; margin-top: 0.5rem; background: rgba(255,100,100,0.15); font-size: 0.75rem;" onclick="diagnosticarNotificacoes()">
+                🔧 Diagnosticar Problemas
+            </button>
         </div>
     </div>
     
@@ -612,29 +686,34 @@
         let dadosResumo = null;
         let vapidPublicKey = null;
         let swRegistration = null;
+        let filtroDataInput = null;
         
         // ===== INICIALIZAÇÃO =====
         document.addEventListener('DOMContentLoaded', async () => {
-            // Data atual
             const hoje = new Date();
-            document.getElementById('dataAtual').textContent = 
-                hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
-            
-            // Carregar dados
+            const isoHoje = hoje.toISOString().split('T')[0];
+
+            filtroDataInput = document.getElementById('filtroData');
+            if (filtroDataInput) {
+                filtroDataInput.value = isoHoje;
+                filtroDataInput.addEventListener('change', atualizarDados);
+            }
+
+            document.getElementById('dataAtual').textContent = 'Carregando resumo...';
+
             await atualizarDados();
-            
-            // Verificar suporte a push
+
             verificarSuportePush();
-            
-            // Auto-refresh a cada 30 segundos
+
             setInterval(atualizarDados, 30000);
         });
         
         // ===== FUNÇÕES DE DADOS =====
         async function atualizarDados() {
+            const dataSelecionada = filtroDataInput?.value || new Date().toISOString().split('T')[0];
             try {
                 await Promise.all([
-                    carregarResumoHoje(),
+                    carregarResumoDia(dataSelecionada),
                     carregarSemana(),
                     carregarMovimentacoes()
                 ]);
@@ -648,15 +727,19 @@
             }
         }
         
-        async function carregarResumoHoje() {
-            const response = await fetch('/api/gerente/resumo-hoje');
-            const data = await response.json();
+        async function carregarResumoDia(dataSelecionada) {
+            const dataParaBuscar = dataSelecionada || new Date().toISOString().split('T')[0];
+            const params = new URLSearchParams({ data: dataParaBuscar });
+            const response = await fetch(`/api/gerente/resumo-hoje?${params.toString()}`);
+            const payload = await response.json();
             
-            if (data.success) {
-                dadosResumo = data;
-                renderizarStatus(data);
-                renderizarResumo(data);
-                renderizarFormasPagamento(data.vendas);
+            if (payload.success) {
+                dadosResumo = payload;
+                renderizarStatus(payload);
+                renderizarResumo(payload);
+                renderizarFormasPagamento(payload.vendas);
+                const dataIso = payload.data || (payload.periodo && payload.periodo.data) || dataParaBuscar;
+                atualizarEtiquetaData(dataIso);
             }
         }
         
@@ -708,6 +791,10 @@
                 <div class="resumo-card destaque">
                     <div class="label">💰 Total de Vendas Hoje</div>
                     <div class="valor">${formatarMoeda(data.total_vendas)}</div>
+                </div>
+                <div class="resumo-card positivo">
+                    <div class="label">💵 Saldo final em dinheiro</div>
+                    <div class="valor">${formatarMoeda(data.saldo_final_dinheiro)}</div>
                 </div>
                 <div class="resumo-card positivo">
                     <div class="label">📦 Qtd. Lançamentos</div>
@@ -785,66 +872,200 @@
                 const emoji = l.categoria === 'venda' ? '🛒' : 
                              l.categoria === 'sangria' ? '💸' : 
                              l.categoria === 'suprimento' ? '💰' : '📋';
+                const estornado = Boolean(l.estornado);
+                const motivoEstorno = estornado ? `<div class="mov-estorno">Estornada • ${l.motivo_estorno || 'Motivo não informado'}</div>` : '';
+                const acaoEstorno = l.categoria === 'venda' && !estornado
+                    ? `<button type="button" class="estornar-btn" onclick="confirmarEstorno(${l.id})">Estornar</button>`
+                    : '';
                 
                 return `
                     <div class="mov-item ${l.tipo}">
                         <div class="mov-info">
                             <div class="mov-categoria">${emoji} ${l.categoria.charAt(0).toUpperCase() + l.categoria.slice(1)}</div>
                             <div class="mov-descricao">${l.descricao || l.forma_pagamento || '-'}</div>
+                            ${motivoEstorno}
                             <div class="mov-hora">${hora}</div>
                         </div>
-                        <div class="mov-valor ${l.tipo}">
-                            ${l.tipo === 'saida' ? '-' : '+'}${formatarMoeda(l.valor)}
+                        <div class="mov-right">
+                            <div class="mov-valor ${l.tipo}">
+                                ${l.tipo === 'saida' ? '-' : '+'}${formatarMoeda(l.valor)}
+                            </div>
+                            ${acaoEstorno}
                         </div>
                     </div>
                 `;
             }).join('');
         }
+
+        async function confirmarEstorno(lancamentoId) {
+            const motivo = prompt('Informe o motivo do estorno (obrigatório):');
+            if (!motivo || !motivo.trim()) {
+                mostrarToast('Motivo do estorno é obrigatório', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/gerente/estornar-venda', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        lancamento_id: lancamentoId,
+                        motivo: motivo.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    mostrarToast('Venda estornada com sucesso', 'success');
+                    await atualizarDados();
+                } else {
+                    mostrarToast(data.message || 'Não foi possível estornar', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao estornar venda:', error);
+                mostrarToast('Erro ao estornar venda', 'error');
+            }
+        }
+
+        function atualizarEtiquetaData(dataISO) {
+            if (!dataISO) return;
+            const label = document.getElementById('dataAtual');
+            const data = criarDataLocal(dataISO);
+            const descricao = data.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+            label.textContent = `Resumo para ${descricao}`;
+        }
+
+        function criarDataLocal(dataISO) {
+            if (!dataISO) {
+                return new Date();
+            }
+            const partes = dataISO.split('-');
+            if (partes.length < 3) {
+                return new Date(dataISO);
+            }
+            const dia = partes[2].split('T')[0];
+            return new Date(Number(partes[0]), Number(partes[1]) - 1, Number(dia));
+        }
         
         // ===== FUNÇÕES DE NOTIFICAÇÃO PUSH =====
         async function verificarSuportePush() {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                document.getElementById('notifStatus').innerHTML = 
-                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">Notificações não suportadas neste navegador</div>';
+            const notifStatusEl = document.getElementById('notifStatus');
+            const notifConfigEl = document.getElementById('notifConfig');
+            
+            // Verificar suporte básico
+            if (!('serviceWorker' in navigator)) {
+                notifStatusEl.innerHTML = 
+                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">⚠️ Service Worker não suportado</div>';
+                console.warn('[Push] Service Worker não suportado');
+                return;
+            }
+            
+            if (!('PushManager' in window)) {
+                notifStatusEl.innerHTML = 
+                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">⚠️ Push API não suportada</div>';
+                console.warn('[Push] PushManager não suportado');
+                return;
+            }
+            
+            if (!('Notification' in window)) {
+                notifStatusEl.innerHTML = 
+                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">⚠️ Notificações não suportadas</div>';
+                console.warn('[Push] Notification API não suportada');
                 return;
             }
             
             try {
-                // Buscar chave VAPID
+                // Buscar chave VAPID primeiro
+                console.log('[Push] Buscando chave VAPID...');
                 const response = await fetch('/api/push/vapid-public-key');
                 const data = await response.json();
-                if (data.success) {
+                if (data.success && data.publicKey) {
                     vapidPublicKey = data.publicKey;
+                    console.log('[Push] Chave VAPID obtida');
+                } else {
+                    throw new Error('Chave VAPID não disponível');
                 }
                 
-                // Registrar service worker
+                // Registrar service worker e aguardar estar pronto
+                console.log('[Push] Registrando Service Worker...');
                 swRegistration = await navigator.serviceWorker.register('/static/js/sw.js');
+                
+                // Aguardar o SW estar ativo
+                await navigator.serviceWorker.ready;
+                console.log('[Push] Service Worker pronto');
                 
                 // Verificar se já está inscrito
                 const subscription = await swRegistration.pushManager.getSubscription();
+                console.log('[Push] Subscrição existente:', !!subscription);
+
                 if (subscription) {
-                    document.getElementById('notifStatus').style.display = 'none';
-                    document.getElementById('notifConfig').style.display = 'block';
+                    notifStatusEl.style.display = 'none';
+                    notifConfigEl.style.display = 'block';
+                } else {
+                    // Verificar permissão atual
+                    const permission = Notification.permission;
+                    console.log('[Push] Permissão atual:', permission);
+                    
+                    if (permission === 'denied') {
+                        notifStatusEl.innerHTML = 
+                            '<div style="color: #ff6b6b; text-align: center; padding: 1rem;">🚫 Notificações bloqueadas<br><small>Desbloqueie nas configurações do navegador</small></div>';
+                    }
                 }
             } catch (error) {
-                console.error('Erro ao configurar push:', error);
+                console.error('[Push] Erro ao configurar:', error);
+                notifStatusEl.innerHTML = 
+                    '<div style="color: #ff6b6b; text-align: center; padding: 1rem;">⚠️ Erro ao configurar notificações<br><small>' + error.message + '</small></div>';
             }
         }
         
         async function ativarNotificacoes() {
+            const notifStatusEl = document.getElementById('notifStatus');
+            const notifConfigEl = document.getElementById('notifConfig');
+            
             try {
+                // Verificar se temos a chave VAPID
+                if (!vapidPublicKey) {
+                    console.log('[Push] Chave VAPID não disponível, tentando obter...');
+                    const response = await fetch('/api/push/vapid-public-key');
+                    const data = await response.json();
+                    if (data.success && data.publicKey) {
+                        vapidPublicKey = data.publicKey;
+                    } else {
+                        throw new Error('Não foi possível obter chave VAPID');
+                    }
+                }
+                
+                // Verificar se SW está registrado
+                if (!swRegistration) {
+                    console.log('[Push] Registrando Service Worker...');
+                    swRegistration = await navigator.serviceWorker.register('/static/js/sw.js');
+                    await navigator.serviceWorker.ready;
+                }
+                
+                console.log('[Push] Solicitando permissão...');
                 const permission = await Notification.requestPermission();
+                console.log('[Push] Permissão:', permission);
                 
                 if (permission !== 'granted') {
-                    mostrarToast('Permissão negada', 'error');
+                    if (permission === 'denied') {
+                        notifStatusEl.innerHTML = 
+                            '<div style="color: #ff6b6b; text-align: center; padding: 1rem;">🚫 Notificações bloqueadas<br><small>Desbloqueie nas configurações do navegador</small></div>';
+                    }
+                    mostrarToast('Permissão não concedida', 'error');
                     return;
                 }
                 
                 // Criar subscrição
+                console.log('[Push] Criando subscrição...');
                 const subscription = await swRegistration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
                 });
+                console.log('[Push] Subscrição criada:', subscription.endpoint.substring(0, 50) + '...');
+                
+                // Identificar dispositivo
+                const nomeDispositivo = detectarDispositivo();
                 
                 // Enviar para o servidor
                 const response = await fetch('/api/push/subscribe', {
@@ -852,36 +1073,143 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         subscription: subscription.toJSON(),
-                        nome_dispositivo: 'Dispositivo do Gerente'
+                        nome_dispositivo: nomeDispositivo
                     })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
-                    mostrarToast('Notificações ativadas!', 'success');
-                    document.getElementById('notifStatus').style.display = 'none';
-                    document.getElementById('notifConfig').style.display = 'block';
+                    mostrarToast('Notificações ativadas! 🔔', 'success');
+                    notifStatusEl.style.display = 'none';
+                    notifConfigEl.style.display = 'block';
+                    
+                    // Mostrar notificação de teste local
+                    setTimeout(() => {
+                        if (swRegistration.showNotification) {
+                            swRegistration.showNotification('PDV-MF', {
+                                body: 'Notificações configuradas com sucesso!',
+                                icon: '/static/img/icon-192.png',
+                                badge: '/static/img/badge-72.png',
+                                tag: 'setup-success'
+                            });
+                        }
+                    }, 1000);
                 } else {
-                    mostrarToast('Erro ao ativar', 'error');
+                    throw new Error(data.message || 'Erro ao registrar no servidor');
                 }
             } catch (error) {
-                console.error('Erro ao ativar notificações:', error);
-                mostrarToast('Erro ao ativar notificações', 'error');
+                console.error('[Push] Erro ao ativar:', error);
+                mostrarToast('Erro: ' + error.message, 'error');
             }
+        }
+        
+        function detectarDispositivo() {
+            const ua = navigator.userAgent;
+            let dispositivo = 'Dispositivo';
+            
+            if (/Android/i.test(ua)) {
+                dispositivo = 'Android';
+                const match = ua.match(/Android[^;]+;\s*([^)]+)/);
+                if (match) dispositivo = match[1].split(' ')[0];
+            } else if (/iPhone|iPad|iPod/i.test(ua)) {
+                dispositivo = 'iPhone';
+            } else if (/Windows/i.test(ua)) {
+                dispositivo = 'Windows';
+            } else if (/Mac/i.test(ua)) {
+                dispositivo = 'Mac';
+            }
+            
+            return dispositivo + ' - Gerente';
         }
         
         async function testarNotificacao() {
             try {
+                mostrarToast('Enviando notificação de teste...', 'info');
+                
                 const response = await fetch('/api/push/test', { method: 'POST' });
                 const data = await response.json();
                 
                 if (data.success) {
-                    mostrarToast(`Enviado para ${data.resultado.enviados} dispositivos`, 'success');
+                    if (data.resultado.enviados > 0) {
+                        mostrarToast(`✅ Enviado para ${data.resultado.enviados} dispositivo(s)`, 'success');
+                    } else {
+                        mostrarToast('⚠️ Nenhum dispositivo inscrito', 'error');
+                    }
+                    
+                    if (data.resultado.expirados > 0) {
+                        console.log('[Push] Subscrições expiradas removidas:', data.resultado.expirados);
+                    }
+                } else {
+                    mostrarToast('Erro: ' + (data.message || 'Falha no envio'), 'error');
                 }
             } catch (error) {
-                mostrarToast('Erro ao enviar teste', 'error');
+                console.error('[Push] Erro no teste:', error);
+                mostrarToast('Erro de conexão ao enviar teste', 'error');
             }
+        }
+        
+        async function diagnosticarNotificacoes() {
+            let diagnostico = [];
+            
+            // 1. Verificar Service Worker
+            if ('serviceWorker' in navigator) {
+                diagnostico.push('✅ Service Worker suportado');
+                const registration = await navigator.serviceWorker.getRegistration('/static/js/sw.js');
+                if (registration) {
+                    diagnostico.push('✅ SW registrado: ' + (registration.active ? 'ativo' : registration.waiting ? 'aguardando' : 'instalando'));
+                } else {
+                    diagnostico.push('❌ SW não registrado');
+                }
+            } else {
+                diagnostico.push('❌ Service Worker não suportado');
+            }
+            
+            // 2. Verificar PushManager
+            if ('PushManager' in window) {
+                diagnostico.push('✅ Push API suportada');
+            } else {
+                diagnostico.push('❌ Push API não suportada');
+            }
+            
+            // 3. Verificar Notification API
+            if ('Notification' in window) {
+                diagnostico.push('✅ Notification API: ' + Notification.permission);
+                if (Notification.permission === 'denied') {
+                    diagnostico.push('⚠️ Notificações BLOQUEADAS - Vá em Configurações > Site > Notificações');
+                }
+            } else {
+                diagnostico.push('❌ Notification API não suportada');
+            }
+            
+            // 4. Verificar HTTPS
+            if (location.protocol === 'https:' || location.hostname === 'localhost') {
+                diagnostico.push('✅ Conexão segura (HTTPS)');
+            } else {
+                diagnostico.push('❌ Requer HTTPS - Push não funciona em HTTP');
+            }
+            
+            // 5. Verificar subscrição
+            if (swRegistration) {
+                const subscription = await swRegistration.pushManager.getSubscription();
+                if (subscription) {
+                    diagnostico.push('✅ Inscrito para notificações');
+                } else {
+                    diagnostico.push('⚠️ Não inscrito - clique em Ativar');
+                }
+            }
+            
+            // 6. Verificar chave VAPID
+            if (vapidPublicKey) {
+                diagnostico.push('✅ Chave VAPID configurada');
+            } else {
+                diagnostico.push('❌ Chave VAPID não carregada');
+            }
+            
+            // Exibir resultado
+            const mensagem = diagnostico.join('\n');
+            alert('🔧 Diagnóstico de Notificações:\n\n' + mensagem);
+            console.log('[Diagnóstico]', diagnostico);
         }
         
         // ===== FUNÇÕES DE PDF =====

@@ -254,7 +254,7 @@ body {
 
 .painel-valores {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
 
@@ -277,6 +277,19 @@ body {
 
 .valor-box.saidas {
     border-color: var(--danger-color);
+}
+
+.valor-box.previsao {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(38, 162, 105, 0.08);
+}
+
+.valor-box.previsao .valor-label {
+    color: rgba(38, 162, 105, 0.9);
+}
+
+.valor-box.previsao .valor-numero {
+    color: var(--success-color);
 }
 
 .valor-label {
@@ -443,9 +456,13 @@ body {
 .lista-lancamentos {
     flex: 1;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    min-height: 180px;
+    padding-right: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lista-lancamentos .lancamento-item + .lancamento-item {
+    margin-top: 0.5rem;
 }
 
 .lancamento-item {
@@ -802,25 +819,28 @@ body {
     margin-top: 0.5rem;
 }
 
-.teclado-linha {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    justify-content: center;
-    margin-bottom: 6px;
+.teclado-inline-grid {
+    display: grid;
+    gap: 6px;
+}
+
+.teclado-inline-grid .linha {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
 }
 
 .tecla-inline {
-    width: calc(8.33% - 4px);
-    min-width: 48px;
-    padding: 0.7rem 0;
-    font-size: 1.2rem;
+    width: 100%;
+    padding: 0.9rem 0;
+    font-size: 1.6rem;
     font-weight: 700;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.12);
     color: white;
+    letter-spacing: 0.5px;
     transition: all 0.15s;
 }
 
