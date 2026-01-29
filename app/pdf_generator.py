@@ -884,8 +884,179 @@ def gerar_resumo_diario_pdf(data_resumo, nome_loja='Minha Loja'):
     ]))
     elements.append(tabela_mov)
     
+    # Lista de Lançamentos Detalhada
+    lancamentos = data_resumo.get('lancamentos', [])
+    if lancamentos:
+        elements.append(Spacer(1, 20))
+        elements.append(Paragraph("📝 Relação Detalhada de Lançamentos", subtitulo_style))
+        
+        # Separar por categoria
+        vendas = [l for l in lancamentos if l.get('categoria') == 'venda' and not l.get('estornado')]
+        despesas = [l for l in lancamentos if l.get('tipo') == 'saida' and not l.get('estornado')]
+        suprimentos = [l for l in lancamentos if l.get('categoria') == 'suprimento' and not l.get('estornado')]
+        
+        # VENDAS
+        if vendas:
+            elements.append(Spacer(1, 10))
+            elements.append(Paragraph("💰 VENDAS DO DIA", ParagraphStyle('VendasTitulo', parent=subtitulo_style, fontSize=12, textColor=colors.HexColor('#26a269'))))
+            
+            lanc_data = [['Hora', 'Forma Pag.', 'Descrição', 'Valor']]
+            total_vendas_lista = 0
+            
+            for lanc in vendas:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '-'
+                
+                forma_pag = lanc.get('forma_pagamento') or 'Não informado'
+                descricao = lanc.get('descricao') or 'Venda'
+                if len(descricao) > 35:
+                    descricao = descricao[:32] + '...'
+                
+                valor = lanc.get('valor', 0)
+                total_vendas_lista += valor
+                
+                lanc_data.append([
+                    hora,
+                    forma_pag,
+                    descricao,
+                    formatar_moeda(valor)
+                ])
+            
+            lanc_data.append(['', '', 'TOTAL VENDAS', formatar_moeda(total_vendas_lista)])
+            
+            tabela_lanc = Table(lanc_data, colWidths=[50, 100, 220, 80])
+            tabela_lanc.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#26a269')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+                ('TOPPADDING', (0, 1), (-1, -1), 4),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#e8f5e9')]),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#26a269')),
+                ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ]))
+            elements.append(tabela_lanc)
+        
+        # DESPESAS/SAÍDAS
+        if despesas:
+            elements.append(Spacer(1, 15))
+            elements.append(Paragraph("💸 DESPESAS E SAÍDAS", ParagraphStyle('DespesasTitulo', parent=subtitulo_style, fontSize=12, textColor=colors.HexColor('#c01c28'))))
+            
+            lanc_data = [['Hora', 'Categoria', 'Descrição', 'Valor']]
+            total_despesas = 0
+            
+            for lanc in despesas:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '-'
+                
+                categoria = lanc.get('categoria', '-').capitalize()
+                descricao = lanc.get('descricao') or 'Sem descrição'
+                if len(descricao) > 35:
+                    descricao = descricao[:32] + '...'
+                
+                valor = lanc.get('valor', 0)
+                total_despesas += valor
+                
+                lanc_data.append([
+                    hora,
+                    categoria,
+                    descricao,
+                    formatar_moeda(valor)
+                ])
+            
+            lanc_data.append(['', '', 'TOTAL SAÍDAS', formatar_moeda(total_despesas)])
+            
+            tabela_lanc = Table(lanc_data, colWidths=[50, 80, 240, 80])
+            tabela_lanc.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#c01c28')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('ALIGN', (3, 1), (3, -1), 'RIGHT'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+                ('TOPPADDING', (0, 1), (-1, -1), 4),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#fce4e4')]),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#c01c28')),
+                ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ]))
+            elements.append(tabela_lanc)
+        
+        # SUPRIMENTOS
+        if suprimentos:
+            elements.append(Spacer(1, 15))
+            elements.append(Paragraph("💵 SUPRIMENTOS", ParagraphStyle('SuprimentosTitulo', parent=subtitulo_style, fontSize=12, textColor=colors.HexColor('#1a5fb4'))))
+            
+            lanc_data = [['Hora', 'Descrição', 'Valor']]
+            total_suprimentos = 0
+            
+            for lanc in suprimentos:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '-'
+                
+                descricao = lanc.get('descricao') or 'Suprimento'
+                if len(descricao) > 50:
+                    descricao = descricao[:47] + '...'
+                
+                valor = lanc.get('valor', 0)
+                total_suprimentos += valor
+                
+                lanc_data.append([
+                    hora,
+                    descricao,
+                    formatar_moeda(valor)
+                ])
+            
+            lanc_data.append(['', 'TOTAL SUPRIMENTOS', formatar_moeda(total_suprimentos)])
+            
+            tabela_lanc = Table(lanc_data, colWidths=[50, 320, 80])
+            tabela_lanc.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a5fb4')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('ALIGN', (2, 1), (2, -1), 'RIGHT'),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('TOPPADDING', (0, 0), (-1, 0), 8),
+                ('BOTTOMPADDING', (0, 1), (-1, -1), 4),
+                ('TOPPADDING', (0, 1), (-1, -1), 4),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#e8eaf6')]),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#1a5fb4')),
+                ('TEXTCOLOR', (0, -1), (-1, -1), colors.white),
+                ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ]))
+            elements.append(tabela_lanc)
+    
     # Rodapé
-    elements.append(Spacer(1, 40))
+    elements.append(Spacer(1, 30))
     elements.append(Paragraph(
         f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}",
         info_style
