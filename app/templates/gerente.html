@@ -116,6 +116,84 @@
         .filtro-data input::-webkit-calendar-picker-indicator {
             filter: invert(1);
         }
+
+        /* Calendário Visual de Datas */
+        .calendario-visual {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            display: flex;
+            gap: 0.35rem;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .calendario-visual::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .calendario-visual::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        .dia-calendario {
+            min-width: 32px;
+            height: 42px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid transparent;
+        }
+
+        .dia-calendario:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .dia-calendario.hoje {
+            border-color: #1a5fb4;
+            background: rgba(26, 95, 180, 0.2);
+        }
+
+        .dia-calendario.selecionado {
+            background: #1a5fb4;
+            font-weight: 700;
+        }
+
+        .dia-calendario .dia-num {
+            font-weight: 600;
+            color: white;
+        }
+
+        .dia-calendario .dia-nome {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 2px;
+        }
+
+        .dia-calendario.com-movimento::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            width: 4px;
+            height: 4px;
+            background: #1a5fb4;
+            border-radius: 50%;
+            box-shadow: 0 0 4px #1a5fb4;
+        }
+
+        .dia-calendario.selecionado.com-movimento::after {
+            background: #26a269;
+            box-shadow: 0 0 4px #26a269;
+        }
         
         /* Status do Caixa */
         .caixa-status-card {
@@ -573,6 +651,9 @@
         <div class="filtro-data">
             <label for="filtroData">📅 Filtrar por data</label>
             <input type="date" id="filtroData">
+            <div class="calendario-visual" id="calendarioVisual">
+                <!-- Preenchido via JavaScript -->
+            </div>
         </div>
     </header>
     
@@ -687,6 +768,7 @@
         let vapidPublicKey = null;
         let swRegistration = null;
         let filtroDataInput = null;
+        let datasComMovimento = new Set();
         
         // ===== INICIALIZAÇÃO =====
         document.addEventListener('DOMContentLoaded', async () => {
@@ -701,7 +783,10 @@
 
             document.getElementById('dataAtual').textContent = 'Carregando resumo...';
 
-            await atualizarDados();
+            await Promise.all([
+                atualizarDados(),
+                carregarDatasComMovimento()
+            ]);
 
             verificarSuportePush();
 
@@ -709,6 +794,65 @@
         });
         
         // ===== FUNÇÕES DE DADOS =====
+        async function carregarDatasComMovimento() {
+            try {
+                const response = await fetch('/api/gerente/datas-com-movimento');
+                const data = await response.json();
+                
+                if (data.success && data.datas) {
+                    datasComMovimento = new Set(data.datas);
+                    renderizarCalendarioVisual();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar datas:', error);
+            }
+        }
+
+        function renderizarCalendarioVisual() {
+            const container = document.getElementById('calendarioVisual');
+            const hoje = new Date();
+            const dataSelecionada = filtroDataInput?.value || hoje.toISOString().split('T')[0];
+            
+            // Últimos 14 dias
+            const dias = [];
+            for (let i = 13; i >= 0; i--) {
+                const data = new Date(hoje);
+                data.setDate(data.getDate() - i);
+                dias.push(data);
+            }
+            
+            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            
+            container.innerHTML = dias.map(data => {
+                const dataISO = data.toISOString().split('T')[0];
+                const ehHoje = dataISO === hoje.toISOString().split('T')[0];
+                const ehSelecionado = dataISO === dataSelecionada;
+                const temMovimento = datasComMovimento.has(dataISO);
+                
+                const classes = [
+                    'dia-calendario',
+                    ehHoje ? 'hoje' : '',
+                    ehSelecionado ? 'selecionado' : '',
+                    temMovimento ? 'com-movimento' : ''
+                ].filter(Boolean).join(' ');
+                
+                return `
+                    <div class="${classes}" onclick="selecionarData('${dataISO}')">
+                        <div class="dia-nome">${diasSemana[data.getDay()]}</div>
+                        <div class="dia-num">${data.getDate()}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selecionarData(dataISO) {
+            if (filtroDataInput) {
+                filtroDataInput.value = dataISO;
+                atualizarDados();
+                renderizarCalendarioVisual();
+            }
+        }
+        
         async function atualizarDados() {
             const dataSelecionada = filtroDataInput?.value || new Date().toISOString().split('T')[0];
             try {
@@ -1214,8 +1358,8 @@
         
         // ===== FUNÇÕES DE PDF =====
         function baixarPDF() {
-            const hoje = new Date().toISOString().split('T')[0];
-            window.open(`/api/relatorio/resumo-diario/pdf?data=${hoje}`, '_blank');
+            const dataSelecionada = filtroDataInput?.value || new Date().toISOString().split('T')[0];
+            window.open(`/api/relatorio/resumo-diario/pdf?data=${dataSelecionada}`, '_blank');
         }
         
         async function enviarResumo() {

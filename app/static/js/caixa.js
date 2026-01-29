@@ -238,6 +238,11 @@ function atualizarDisplayValor() {
         inputValor.value = formatarValorDisplay(valorAtual);
     }
     
+    // Atualizar valores rapidos se for venda em dinheiro
+    if (formaSelecionada === 'Dinheiro') {
+        atualizarValoresRapidos();
+    }
+    
     calcularTroco();
 }
 
@@ -405,6 +410,89 @@ function setarCampoAtivo(campo) {
 function setarValorRapido(valor) {
     valorRecebidoAtual = String(valor * 100);
     atualizarDisplayRecebido();
+}
+
+// Funcao para calcular valores sugeridos baseados no valor da venda
+function calcularValoresSugeridos(valorVenda) {
+    if (valorVenda <= 0) {
+        return [10, 20, 50, 100];
+    }
+    
+    var sugestoes = [];
+    
+    // Primeira sugestao: o valor exato da venda
+    sugestoes.push(valorVenda);
+    
+    // Segunda sugestao: arredondar para a proxima nota comum
+    var notasComuns = [5, 10, 20, 50, 100, 200];
+    for (var i = 0; i < notasComuns.length; i++) {
+        if (notasComuns[i] > valorVenda) {
+            sugestoes.push(notasComuns[i]);
+            break;
+        }
+    }
+    
+    // Se nao encontrou nota maior, adicionar multiplos
+    if (sugestoes.length === 1) {
+        var multiplo = Math.ceil(valorVenda / 100) * 100;
+        if (multiplo > valorVenda) {
+            sugestoes.push(multiplo);
+        }
+    }
+    
+    // Terceira e quarta sugestoes: multiplos ou valores maiores
+    if (valorVenda <= 50) {
+        if (sugestoes.indexOf(100) === -1) sugestoes.push(100);
+        if (sugestoes.indexOf(200) === -1) sugestoes.push(200);
+    } else if (valorVenda <= 100) {
+        if (sugestoes.indexOf(150) === -1) sugestoes.push(150);
+        if (sugestoes.indexOf(200) === -1) sugestoes.push(200);
+    } else {
+        var proxMultiplo = Math.ceil(valorVenda / 50) * 50;
+        if (sugestoes.indexOf(proxMultiplo) === -1 && proxMultiplo > valorVenda) {
+            sugestoes.push(proxMultiplo);
+        }
+        var proxMultiplo100 = Math.ceil(valorVenda / 100) * 100;
+        if (sugestoes.indexOf(proxMultiplo100) === -1 && proxMultiplo100 > valorVenda) {
+            sugestoes.push(proxMultiplo100);
+        }
+    }
+    
+    // Garantir que temos exatamente 4 sugestoes
+    while (sugestoes.length < 4) {
+        var ultimo = sugestoes[sugestoes.length - 1];
+        var proximo = ultimo + 50;
+        if (sugestoes.indexOf(proximo) === -1) {
+            sugestoes.push(proximo);
+        }
+    }
+    
+    // Retornar apenas as 4 primeiras sugestoes unicas
+    var resultado = [];
+    for (var i = 0; i < sugestoes.length && resultado.length < 4; i++) {
+        if (resultado.indexOf(sugestoes[i]) === -1) {
+            resultado.push(sugestoes[i]);
+        }
+    }
+    
+    return resultado;
+}
+
+// Funcao para atualizar os botoes de valores rapidos
+function atualizarValoresRapidos() {
+    var valorVenda = getValorNumerico(valorAtual);
+    var valoresSugeridos = calcularValoresSugeridos(valorVenda);
+    
+    var container = document.querySelector('.valores-rapidos');
+    if (!container) return;
+    
+    var html = '';
+    for (var i = 0; i < valoresSugeridos.length; i++) {
+        var valor = valoresSugeridos[i];
+        html += '<button class="valor-rapido-btn" onclick="setarValorRapido(' + valor + ')">R$' + valor + '</button>';
+    }
+    
+    container.innerHTML = html;
 }
 
 // ====================================

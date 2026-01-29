@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Sincronização de Horário</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #1a5fb4; }
+        h2 { color: #333; font-size: 1.2em; }
+        .clock {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            color: #26a269;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.synced {
+            background: #e8f5e9;
+            border-left: 4px solid #26a269;
+        }
+        .status.error {
+            background: #fce4e4;
+            border-left: 4px solid #c01c28;
+        }
+        button {
+            background: #1a5fb4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+        }
+        button:hover {
+            background: #15539e;
+        }
+        .info {
+            font-size: 0.9em;
+            color: #666;
+            margin: 10px 0;
+        }
+        .code {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🕐 Demo - Sincronização de Horário</h1>
+    
+    <div class="card">
+        <h2>⏰ Relógio Sincronizado</h2>
+        <div class="clock" id="clock">--:--:--</div>
+        <div class="info" id="date">-- de ------ de ----</div>
+    </div>
+    
+    <div class="card">
+        <h2>📊 Status da Sincronização</h2>
+        <div id="status" class="status">
+            <strong>Status:</strong> Carregando...
+        </div>
+        <div class="info">
+            <strong>Última sincronização:</strong> <span id="lastSync">-</span><br>
+            <strong>Offset do servidor:</strong> <span id="offset">-</span>s<br>
+            <strong>Usando hora do servidor:</strong> <span id="usingServer">-</span>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🎮 Controles</h2>
+        <button onclick="forceSync()">🔄 Forçar Sincronização</button>
+        <button onclick="showStatus()">📊 Ver Status Detalhado</button>
+        <button onclick="testAPI()">🧪 Testar API</button>
+    </div>
+    
+    <div class="card">
+        <h2>💻 Exemplo de Uso</h2>
+        <p>Como obter a hora sincronizada no seu código:</p>
+        <div class="code">
+// Obter hora atual sincronizada<br>
+const agora = timeSync.now();<br>
+console.log(agora);<br>
+<br>
+// Obter formatada<br>
+const formatada = timeSync.nowFormatted();<br>
+console.log(formatada); // "28/01/2026 21:36:27"<br>
+<br>
+// Obter ISO<br>
+const iso = timeSync.nowISO();<br>
+console.log(iso); // "2026-01-28T21:36:27.123Z"<br>
+<br>
+// Funções auxiliares<br>
+const hora = getCurrentTime();<br>
+const isoStr = getCurrentTimeISO();
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>📝 Log de Eventos</h2>
+        <div id="log" class="code" style="max-height: 200px; overflow-y: auto;">
+            Aguardando eventos...<br>
+        </div>
+        <button onclick="clearLog()">🗑️ Limpar Log</button>
+    </div>
+
+    <script>
+        // Simular API_BASE para o exemplo
+        const API_BASE = '/api';
+        
+        // Incluir o código do time-sync inline para demonstração
+        class TimeSync {
+            constructor() {
+                this.serverTimeOffset = 0;
+                this.lastSync = null;
+                this.syncInterval = 5 * 60 * 1000;
+                this.isInitialized = false;
+            }
+
+            async init() {
+                if (this.isInitialized) return;
+                
+                log('🔄 Inicializando sincronização...');
+                await this.sync();
+                this.isInitialized = true;
+                
+                setInterval(() => this.sync(), this.syncInterval);
+                
+                log('✅ TimeSync inicializado');
+            }
+
+            async sync() {
+                try {
+                    log('🌐 Sincronizando com servidor...');
+                    const clientTimeBefore = Date.now();
+                    
+                    const response = await fetch(API_BASE + '/time/current');
+                    
+                    const clientTimeAfter = Date.now();
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const serverTime = new Date(data.datetime).getTime();
+                        
+                        const clientTimeAvg = (clientTimeBefore + clientTimeAfter) / 2;
+                        this.serverTimeOffset = serverTime - clientTimeAvg;
+                        this.lastSync = new Date();
+                        
+                        const offsetSec = (this.serverTimeOffset / 1000).toFixed(2);
+                        log(`✅ Sincronizado! Offset: ${offsetSec}s`);
+                        return true;
+                    }
+                } catch (error) {
+                    log('❌ Erro ao sincronizar: ' + error.message);
+                }
+                return false;
+            }
+
+            now() {
+                if (!this.lastSync) {
+                    log('⚠️  Usando hora local (não sincronizada)');
+                    return new Date();
+                }
+                
+                const clientTime = Date.now();
+                const syncedTime = clientTime + this.serverTimeOffset;
+                return new Date(syncedTime);
+            }
+
+            nowISO() {
+                return this.now().toISOString();
+            }
+
+            nowFormatted(includeSeconds = true) {
+                const date = this.now();
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                
+                if (includeSeconds) {
+                    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                }
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            }
+
+            async getStatus() {
+                try {
+                    const response = await fetch(API_BASE + '/time/status');
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (error) {
+                    log('❌ Erro ao obter status: ' + error.message);
+                }
+                return null;
+            }
+
+            async forceSync() {
+                try {
+                    log('🔄 Forçando sincronização no servidor...');
+                    const response = await fetch(API_BASE + '/time/sync', {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        log('✅ ' + data.message);
+                        await this.sync();
+                        return true;
+                    }
+                } catch (error) {
+                    log('❌ Erro ao forçar sincronização: ' + error.message);
+                }
+                return false;
+            }
+        }
+
+        const timeSync = new TimeSync();
+        window.timeSync = timeSync;
+
+        function getCurrentTime() {
+            return timeSync.now();
+        }
+
+        function getCurrentTimeISO() {
+            return timeSync.nowISO();
+        }
+
+        // Funções da interface
+        function updateClock() {
+            const now = timeSync.now();
+            const time = now.toTimeString().split(' ')[0];
+            document.getElementById('clock').textContent = time;
+            
+            const months = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                          'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+            const dateStr = `${now.getDate()} de ${months[now.getMonth()]} de ${now.getFullYear()}`;
+            document.getElementById('date').textContent = dateStr;
+        }
+
+        async function updateStatus() {
+            const status = await timeSync.getStatus();
+            if (status) {
+                const statusDiv = document.getElementById('status');
+                if (status.synchronized) {
+                    statusDiv.className = 'status synced';
+                    statusDiv.innerHTML = '<strong>Status:</strong> ✅ Sincronizado';
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '<strong>Status:</strong> ⚠️ Não sincronizado';
+                }
+                
+                const lastSyncDate = status.last_sync ? new Date(status.last_sync).toLocaleString('pt-BR') : '-';
+                document.getElementById('lastSync').textContent = lastSyncDate;
+                document.getElementById('offset').textContent = status.offset_seconds?.toFixed(2) || '-';
+                document.getElementById('usingServer').textContent = status.using_server_time ? 'Sim' : 'Não';
+            }
+        }
+
+        async function forceSync() {
+            log('🔄 Forçando sincronização...');
+            const success = await timeSync.forceSync();
+            if (success) {
+                await updateStatus();
+            }
+        }
+
+        async function showStatus() {
+            const status = await timeSync.getStatus();
+            if (status) {
+                log('📊 Status: ' + JSON.stringify(status, null, 2));
+            }
+        }
+
+        async function testAPI() {
+            log('🧪 Testando endpoints da API...');
+            
+            try {
+                log('GET /api/time/current');
+                const resp1 = await fetch('/api/time/current');
+                const data1 = await resp1.json();
+                log('✅ ' + data1.formatted);
+                
+                log('GET /api/time/status');
+                const resp2 = await fetch('/api/time/status');
+                const data2 = await resp2.json();
+                log('✅ ' + data2.message);
+            } catch (error) {
+                log('❌ ' + error.message);
+            }
+        }
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString('pt-BR');
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = 'Log limpo.<br>';
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', async () => {
+            log('🚀 Inicializando demo...');
+            await timeSync.init();
+            
+            // Atualizar relógio
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Atualizar status
+            await updateStatus();
+            setInterval(updateStatus, 5000);
+            
+            log('✅ Demo pronta!');
+        });
+    </script>
+</body>
+</html>

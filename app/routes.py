@@ -10,6 +10,7 @@ from app.push_notifications import (
 from app.pdf_generator import (
     gerar_relatorio_caixa_pdf, gerar_relatorio_periodo_pdf, gerar_resumo_diario_pdf
 )
+from app.time_sync import get_time_sync, get_brasilia_time, get_brasilia_time_iso
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, or_
 
@@ -38,6 +39,11 @@ def gerente():
     """Painel do gerente/dono - acesso mobile"""
     return render_template('gerente.html')
 
+@main_bp.route('/time-demo')
+def time_demo():
+    """Página de demonstração da sincronização de horário"""
+    return render_template('time-demo.html')
+
 # ===== API - CONFIGURAÇÕES =====
 
 @api_bp.route('/configuracao', methods=['GET'])
@@ -65,6 +71,52 @@ def update_configuracao():
     
     db.session.commit()
     return jsonify({'success': True, 'message': 'Configurações atualizadas'})
+
+# ===== API - HORA SINCRONIZADA =====
+
+@api_bp.route('/time/current', methods=['GET'])
+def get_current_time():
+    """Obter hora atual sincronizada de Brasília"""
+    time_sync = get_time_sync()
+    current_time = time_sync.get_current_time()
+    
+    return jsonify({
+        'success': True,
+        'datetime': current_time.isoformat(),
+        'timestamp': int(current_time.timestamp()),
+        'formatted': current_time.strftime('%d/%m/%Y %H:%M:%S'),
+        'timezone': 'America/Sao_Paulo'
+    })
+
+@api_bp.route('/time/status', methods=['GET'])
+def get_time_status():
+    """Obter status da sincronização de horário"""
+    time_sync = get_time_sync()
+    status = time_sync.get_sync_status()
+    
+    return jsonify({
+        'success': True,
+        **status
+    })
+
+@api_bp.route('/time/sync', methods=['POST'])
+def force_time_sync():
+    """Forçar sincronização com a API externa"""
+    time_sync = get_time_sync()
+    success = time_sync.sync_time()
+    
+    if success:
+        status = time_sync.get_sync_status()
+        return jsonify({
+            'success': True,
+            'message': 'Hora sincronizada com sucesso',
+            **status
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': 'Falha ao sincronizar com a API'
+        }), 500
 
 # ===== API - CAIXA =====
 
@@ -794,6 +846,36 @@ def ultimas_movimentacoes():
     })
 
 
+@api_bp.route('/gerente/datas-com-movimento', methods=['GET'])
+def datas_com_movimento():
+    """Retorna lista de datas que possuem movimentações (últimos 30 dias)"""
+    try:
+        from datetime import timedelta
+        data_limite = datetime.now() - timedelta(days=30)
+        
+        # Buscar datas únicas com lançamentos
+        datas = db.session.query(
+            func.date(Lancamento.data_hora).label('data')
+        ).filter(
+            Lancamento.data_hora >= data_limite
+        ).distinct().all()
+        
+        # Converter para lista de strings ISO
+        datas_formatadas = [d.data.isoformat() for d in datas if d.data]
+        
+        return jsonify({
+            'success': True,
+            'datas': datas_formatadas
+        })
+    except Exception as e:
+        print(f"Erro ao buscar datas com movimento: {e}")
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'datas': []
+        }), 500
+
+
 @api_bp.route('/gerente/estornar-venda', methods=['POST'])
 def estornar_venda():
     """Registra o estorno de uma venda"""
@@ -1015,6 +1097,14 @@ def relatorio_periodo_pdf():
         )
     ).group_by(Lancamento.forma_pagamento).all()
     
+    # Buscar todos os lançamentos do período
+    lancamentos = Lancamento.query.filter(
+        and_(
+            Lancamento.data_hora >= data_inicio_dt,
+            Lancamento.data_hora <= data_fim_dt
+        )
+    ).order_by(Lancamento.data_hora).all()
+    
     dados_relatorio = {
         'periodo': {
             'inicio': data_inicio,
@@ -1032,7 +1122,8 @@ def relatorio_periodo_pdf():
         'pagamentos': [
             {'forma': p.forma_pagamento or 'Não informado', 'total': float(p.total)}
             for p in pagamentos
-        ]
+        ],
+        'lancamentos': [l.to_dict() for l in lancamentos]
     }
     
     config = Configuracao.get_config()
