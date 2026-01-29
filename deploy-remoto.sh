@@ -6,7 +6,7 @@
 set -e
 
 SERVIDOR="pedropoiani@192.168.1.45"
-CAMINHO_REMOTO="/home/pedropoiani/SimplesCaixa"
+CAMINHO_REMOTO="/home/pedropoiani/simplescaixa"
 
 echo "🚀 DEPLOY REMOTO - SimplesCaixa"
 echo "================================"
@@ -23,7 +23,7 @@ echo ""
 # Passo 2: Puxar código
 echo "➤ PASSO 2: Puxando código do GitHub..."
 ssh "$SERVIDOR" << 'SCRIPT'
-cd /home/pedropoiani/SimplesCaixa || cd ~/SimplesCaixa || exit 1
+cd /home/pedropoiani/simplescaixa || cd ~/simplescaixa || exit 1
 pwd
 echo "Branches disponíveis:"
 git branch -a
@@ -34,10 +34,26 @@ echo "✓ Código atualizado"
 SCRIPT
 echo ""
 
-# Passo 3: Parar containers
-echo "➤ PASSO 3: Parando containers..."
+# Passo 3: Backup antes do deploy
+echo "➤ PASSO 3: Criando backup do banco de dados..."
 ssh "$SERVIDOR" << 'SCRIPT'
-cd /home/pedropoiani/SimplesCaixa || cd ~/SimplesCaixa
+cd /home/pedropoiani/simplescaixa || cd ~/simplescaixa
+
+# Verificar se rclone está configurado
+if command -v rclone &> /dev/null && rclone listremotes | grep -q "^gdrive:$"; then
+    echo "Google Drive configurado, executando backup..."
+    bash backup-gdrive.sh || echo "⚠️  Backup falhou, continuando deploy..."
+else
+    echo "⚠️  Google Drive não configurado, pulando backup automático"
+    echo "   Configure com: rclone config"
+fi
+SCRIPT
+echo ""
+
+# Passo 4: Parar containers
+echo "➤ PASSO 4: Parando containers..."
+ssh "$SERVIDOR" << 'SCRIPT'
+cd /home/pedropoiani/simplescaixa || cd ~/simplescaixa
 echo "Containers atuais:"
 docker-compose ps
 echo ""
@@ -47,25 +63,25 @@ echo "✓ Containers parados"
 SCRIPT
 echo ""
 
-# Passo 4: Iniciar novos containers
-echo "➤ PASSO 4: Iniciando novos containers (preservando DB)..."
+# Passo 5: Iniciar novos containers
+echo "➤ PASSO 5: Iniciando novos containers (preservando DB)..."
 ssh "$SERVIDOR" << 'SCRIPT'
-cd /home/pedropoiani/SimplesCaixa || cd ~/SimplesCaixa
+cd /home/pedropoiani/simplescaixa || cd ~/simplescaixa
 docker-compose up -d --build
 echo "✓ Containers iniciados"
 SCRIPT
 echo ""
 
-# Passo 5: Aguardar inicialização
-echo "➤ PASSO 5: Aguardando inicialização (30s)..."
+# Passo 6: Aguardar inicialização
+echo "➤ PASSO 6: Aguardando inicialização (30s)..."
 sleep 30
 echo "✓ Pronto"
 echo ""
 
-# Passo 6: Verificar saúde
-echo "➤ PASSO 6: Verificando status..."
+# Passo 7: Verificar saúde
+echo "➤ PASSO 7: Verificando status..."
 ssh "$SERVIDOR" << 'SCRIPT'
-cd /home/pedropoiani/SimplesCaixa || cd ~/SimplesCaixa
+cd /home/pedropoiani/simplescaixa || cd ~/simplescaixa
 echo "Status dos containers:"
 docker-compose ps
 echo ""
@@ -82,7 +98,7 @@ echo "  • URL: http://192.168.1.45:5000"
 echo "  • Health: http://192.168.1.45:5000/health"
 echo ""
 echo "🔍 Para ver logs em tempo real:"
-echo "  ssh $SERVIDOR 'cd SimplesCaixa && docker-compose logs -f web'"
+echo "  ssh $SERVIDOR 'cd simplescaixa && docker-compose logs -f web'"
 echo ""
 echo "⚠️  Dados do banco de dados foram preservados"
 echo ""
