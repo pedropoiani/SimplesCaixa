@@ -1,4 +1,6 @@
-# Ambientes Python
+# ==========================================
+# AMBIENTES PYTHON
+# ==========================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,23 +10,48 @@ env/
 venv/
 ENV/
 .venv
+env.bak/
+venv.bak/
+*.pyo
+*.pyd
+*.pyc
 .Python
 
-# Flask
+# Pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# ==========================================
+# FLASK
+# ==========================================
 instance/
 *.db
 .webassets-cache
 .flask_session/
+flask_session/
 
-# Banco de dados - CRÍTICO: Nunca commitar
+# ==========================================
+# BANCO DE DADOS - CRÍTICO: Nunca commitar
+# ==========================================
 *.db
 *.sqlite
 *.sqlite3
 *.sql
+*.dump
+*.bak
+*.backup
 data/
 instance/*.db
+db_data/
+database/
+*.mdb
+*.accdb
 
-# IDEs e Editores
+# ==========================================
+# IDEs E EDITORES
+# ==========================================
 .vscode/
 .idea/
 *.swp
@@ -33,67 +60,233 @@ instance/*.db
 .project
 .pydevproject
 .settings/
+*.sublime-project
+*.sublime-workspace
+.vs/
+.vscode-test/
 
-# Sistemas Operacionais
+# JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ==========================================
+# SISTEMAS OPERACIONAIS
+# ==========================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 desktop.ini
+$RECYCLE.BIN/
 
-# Logs - CRÍTICO: Podem conter informações sensíveis
-*.log
-logs/
-*.log.*
-
-# Variáveis de ambiente - CRÍTICO: Contém senhas e chaves
+# ==========================================
+# VARIÁVEIS DE AMBIENTE - CRÍTICO
+# ==========================================
 .env
 .env.*
 .env.local
 .env.production
 .env.development
+.env.test
+.envrc
 !.env.example
+!.env.sample
 
-# Chaves e Certificados - CRÍTICO
+# ==========================================
+# CHAVES E CERTIFICADOS - CRÍTICO
+# ==========================================
 *.pem
 *.key
 *.cert
 *.crt
+*.cer
 *.p12
+*.pfx
+*.pub
+*.rsa
+*.dsa
+*.ppk
 vapid_private.pem
 vapid_public.pem
+id_rsa*
+id_dsa*
+id_ed25519*
+*.keystore
+*.jks
 
-# Backups do banco de dados
+# SSH
+.ssh/
+ssh_config
+known_hosts
+
+# ==========================================
+# CREDENCIAIS E CONFIGURAÇÕES SENSÍVEIS
+# ==========================================
+secrets.yml
+secrets.json
+credentials.yml
+credentials.json
+config.production.*
+settings.local.*
+*.secret
+*.credentials
+
+# ==========================================
+# LOGS - CRÍTICO: Podem conter info sensível
+# ==========================================
+*.log
+logs/
+*.log.*
+log/
+*.out
+*.err
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==========================================
+# BACKUPS
+# ==========================================
 *.backup
 *.bak
+*.old
+*.orig
 backup/
 backups/
+*_backup/
+*_bak/
 
-# Arquivos temporários
+# ==========================================
+# UPLOADS E ARQUIVOS DE USUÁRIOS
+# ==========================================
+uploads/
+media/
+user_files/
+attachments/
+static/uploads/
+
+# ==========================================
+# ARQUIVOS TEMPORÁRIOS E CACHE
+# ==========================================
 *.tmp
 *.temp
 .cache/
 tmp/
+temp/
+*.swp
+*.swo
+*~
+.sass-cache/
+node_modules/.cache/
 
-# Build e distribuição
-dist/
-build/
-*.egg-info/
-.eggs/
-
-# Testes
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# Docker (volumes locais)
+# ==========================================
+# DOCKER
+# ==========================================
 docker-compose.override.yml
+.docker/
+docker-data/
 
-# Uploads de usuários (se houver)
-uploads/
-media/
-
-# Configurações locais específicas
+# ==========================================
+# CONFIGURAÇÕES LOCAIS ESPECÍFICAS
+# ==========================================
 pdv-mf.service
 nginx.conf
 !nginx.conf.example
 !pdv-mf.service.example
+
+# Configurações de desenvolvimento local
+local_settings.py
+settings_local.py
+config_local.py
+
+# ==========================================
+# BUILD E DISTRIBUIÇÃO
+# ==========================================
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+*.whl
+*.tar.gz
+*.zip
+
+# ==========================================
+# TESTES
+# ==========================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+test_*.db
+test_*.sqlite
+test_results/
+
+# ==========================================
+# SEGURANÇA E SENHAS
+# ==========================================
+password.txt
+passwords.txt
+*.password
+auth_token*
+api_key*
+*.token
+jwt_secret*
+
+# ==========================================
+# DADOS PESSOAIS E FINANCEIROS
+# ==========================================
+*.csv
+*.xlsx
+*.xls
+relatórios/
+relatorios/
+vendas_*.pdf
+fechamento_*.pdf
+
+# ==========================================
+# NODE.JS (se houver frontend)
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnp.*
+.yarn/
+
+# ==========================================
+# OUTROS ARQUIVOS SENSÍVEIS
+# ==========================================
+core
+*.core
+*.pid
+*.seed
+*.pid.lock
+.env.production.local
+.env.development.local
+.DS_Store
+
+# Arquivos de dump
+*.dump
+dump.rdb
+
+# ==========================================
+# ARQUIVOS DE TESTE LOCAIS
+# ==========================================
+test_*.pdf
+exemplo_*.pdf
+demo_*.pdf
+teste_*.*
