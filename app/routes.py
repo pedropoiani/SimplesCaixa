@@ -1158,7 +1158,7 @@ def resumo_diario_pdf():
     lancamentos = Lancamento.query.filter(
         Lancamento.data_hora >= inicio_dia,
         Lancamento.data_hora <= fim_dia
-    ).all()
+    ).order_by(Lancamento.data_hora).all()
     
     vendas_dinheiro = 0
     vendas_pix = 0
@@ -1199,7 +1199,8 @@ def resumo_diario_pdf():
         'movimentacoes': {
             'sangrias': total_sangrias,
             'suprimentos': total_suprimentos
-        }
+        },
+        'lancamentos': [l.to_dict() for l in lancamentos]
     }
     
     config = Configuracao.get_config()

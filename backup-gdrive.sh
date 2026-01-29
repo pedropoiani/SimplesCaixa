@@ -74,7 +74,7 @@ backup_database() {
     # Verificar se está rodando via Docker
     if docker-compose ps db 2>/dev/null | grep -q "Up"; then
         echo "  • Fazendo dump via Docker..."
-        docker-compose exec -T db pg_dump -U postgres pdvmf > "${BACKUP_DIR}/${DB_BACKUP_FILE}"
+        docker-compose exec -T db pg_dump -U pdvuser pdvmf > "${BACKUP_DIR}/${DB_BACKUP_FILE}"
         
         if [ -f "${BACKUP_DIR}/${DB_BACKUP_FILE}" ]; then
             SIZE=$(du -h "${BACKUP_DIR}/${DB_BACKUP_FILE}" | cut -f1)
