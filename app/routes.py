@@ -2,13 +2,10 @@
 Rotas da aplicação
 """
 from flask import Blueprint, render_template, request, jsonify, Response
-from app.models import db, Caixa, Lancamento, Configuracao, PushSubscription, Estorno
-from app.push_notifications import (
-    enviar_para_todos, notificar_sangria, notificar_abertura, 
-    notificar_fechamento, notificar_resumo_diario, get_vapid_public_key
-)
+from app.models import db, Caixa, Lancamento, Configuracao, Estorno
 from app.pdf_generator import (
-    gerar_relatorio_caixa_pdf, gerar_relatorio_periodo_pdf, gerar_resumo_diario_pdf
+    gerar_relatorio_caixa_pdf, gerar_relatorio_periodo_pdf, gerar_resumo_diario_pdf,
+    gerar_cupom_termico_caixa
 )
 from app.time_sync import get_time_sync, get_brasilia_time, get_brasilia_time_iso
 from datetime import datetime, timedelta
@@ -152,12 +149,6 @@ def abrir_caixa():
     db.session.add(caixa)
     db.session.commit()
     
-    # Enviar notificação push de abertura
-    try:
-        notificar_abertura(db, PushSubscription, caixa.operador, caixa.troco_inicial)
-    except Exception as e:
-        print(f"Erro ao enviar notificação de abertura: {e}")
-    
     return jsonify({
         'success': True,
         'message': 'Caixa aberto com sucesso',
@@ -184,18 +175,14 @@ def fechar_caixa():
     if 'valor_contado' in data:
         valor_contado = float(data['valor_contado'])
         caixa.valor_contado = valor_contado
-        caixa.diferenca = valor_contado - totais['saldo_atual']
+        # A diferença deve ser calculada em relação ao saldo em dinheiro, não ao saldo total
+        saldo_dinheiro = caixa.calcular_saldo_dinheiro()
+        caixa.diferenca = valor_contado - saldo_dinheiro
     
     if 'observacao' in data:
         caixa.observacao = data['observacao']
     
     db.session.commit()
-    
-    # Enviar notificação push de fechamento
-    try:
-        notificar_fechamento(db, PushSubscription, total_vendas, caixa.diferenca)
-    except Exception as e:
-        print(f"Erro ao enviar notificação de fechamento: {e}")
     
     return jsonify({
         'success': True,
@@ -302,18 +289,8 @@ def resumo_fechamento():
     # Total de vendas
     total_vendas = vendas_dinheiro + vendas_pix + vendas_cartao_credito + vendas_cartao_debito + vendas_outras
     
-    # Dinheiro esperado no caixa físico:
-    # Troco inicial + Vendas em dinheiro - Troco dado - Sangrias + Suprimentos + Outros entrada - Outros saída
-    dinheiro_esperado = (
-        caixa.troco_inicial 
-        + vendas_dinheiro 
-        - total_troco_dado 
-        - total_sangrias 
-        + total_suprimentos
-        + total_outros_entrada
-        - total_outros_saida
-        - total_estornos_dinheiro
-    )
+    # Usar o método do modelo para calcular dinheiro esperado
+    dinheiro_esperado = caixa.calcular_saldo_dinheiro()
     
     return jsonify({
         'success': True,
@@ -371,13 +348,6 @@ def criar_lancamento():
     
     db.session.add(lancamento)
     db.session.commit()
-    
-    # Enviar notificação push para sangrias
-    if data['categoria'] == 'sangria':
-        try:
-            notificar_sangria(db, PushSubscription, valor, data.get('descricao', ''))
-        except Exception as e:
-            print(f"Erro ao enviar notificação de sangria: {e}")
     
     return jsonify({
         'success': True,
@@ -551,166 +521,6 @@ def relatorio_resumo():
     })
 
 
-# ===== API - PUSH NOTIFICATIONS =====
-
-@api_bp.route('/push/vapid-public-key', methods=['GET'])
-def vapid_public_key():
-    """Retorna a chave pública VAPID para o frontend"""
-    return jsonify({
-        'success': True,
-        'publicKey': get_vapid_public_key()
-    })
-
-
-@api_bp.route('/push/subscribe', methods=['POST'])
-def push_subscribe():
-    """Registrar nova subscrição de push"""
-    data = request.json
-    
-    subscription = data.get('subscription', {})
-    endpoint = subscription.get('endpoint')
-    keys = subscription.get('keys', {})
-    p256dh = keys.get('p256dh')
-    auth = keys.get('auth')
-    
-    if not endpoint or not p256dh or not auth:
-        return jsonify({'success': False, 'message': 'Dados de subscrição inválidos'}), 400
-    
-    # Verificar se já existe
-    existing = PushSubscription.query.filter_by(endpoint=endpoint).first()
-    
-    if existing:
-        # Atualizar
-        existing.p256dh = p256dh
-        existing.auth = auth
-        existing.ativo = True
-        if data.get('nome_dispositivo'):
-            existing.nome_dispositivo = data.get('nome_dispositivo')
-    else:
-        # Criar nova
-        sub = PushSubscription(
-            endpoint=endpoint,
-            p256dh=p256dh,
-            auth=auth,
-            nome_dispositivo=data.get('nome_dispositivo', 'Dispositivo'),
-            ativo=True
-        )
-        db.session.add(sub)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Subscrição registrada com sucesso'
-    })
-
-
-@api_bp.route('/push/unsubscribe', methods=['POST'])
-def push_unsubscribe():
-    """Cancelar subscrição de push"""
-    data = request.json
-    endpoint = data.get('endpoint')
-    
-    if not endpoint:
-        return jsonify({'success': False, 'message': 'Endpoint não informado'}), 400
-    
-    sub = PushSubscription.query.filter_by(endpoint=endpoint).first()
-    if sub:
-        sub.ativo = False
-        db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Subscrição cancelada'})
-
-
-@api_bp.route('/push/subscriptions', methods=['GET'])
-def listar_subscriptions():
-    """Listar todas as subscrições ativas"""
-    subs = PushSubscription.query.filter_by(ativo=True).all()
-    return jsonify({
-        'success': True,
-        'subscriptions': [s.to_dict() for s in subs]
-    })
-
-
-@api_bp.route('/push/subscription/<int:id>/config', methods=['PUT'])
-def atualizar_config_subscription(id):
-    """Atualizar configurações de notificação de uma subscrição"""
-    sub = PushSubscription.query.get(id)
-    
-    if not sub:
-        return jsonify({'success': False, 'message': 'Subscrição não encontrada'}), 404
-    
-    data = request.json
-    
-    if 'notificar_sangria' in data:
-        sub.notificar_sangria = data['notificar_sangria']
-    if 'notificar_abertura' in data:
-        sub.notificar_abertura = data['notificar_abertura']
-    if 'notificar_fechamento' in data:
-        sub.notificar_fechamento = data['notificar_fechamento']
-    if 'notificar_resumo_diario' in data:
-        sub.notificar_resumo_diario = data['notificar_resumo_diario']
-    if 'nome_dispositivo' in data:
-        sub.nome_dispositivo = data['nome_dispositivo']
-    
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'message': 'Configurações atualizadas',
-        'subscription': sub.to_dict()
-    })
-
-
-@api_bp.route('/push/test', methods=['POST'])
-def testar_push():
-    """Enviar notificação de teste"""
-    data = request.json or {}
-    tipo_teste = data.get('tipo', 'geral')
-    
-    if tipo_teste == 'sangria':
-        resultado = notificar_sangria(
-            db, PushSubscription, 
-            valor=150.00, 
-            motivo='Teste de notificação de sangria'
-        )
-    elif tipo_teste == 'abertura':
-        resultado = notificar_abertura(
-            db, PushSubscription,
-            operador='Operador de Teste',
-            troco_inicial=100.00
-        )
-    elif tipo_teste == 'fechamento':
-        resultado = notificar_fechamento(
-            db, PushSubscription,
-            total_vendas=1250.50,
-            diferenca=0.00
-        )
-    elif tipo_teste == 'resumo_diario':
-        resultado = notificar_resumo_diario(
-            db, PushSubscription,
-            resumo={
-                'total_vendas': 1250.50,
-                'total_sangrias': 150.00,
-                'lucro_liquido': 350.00,
-                'total_transacoes': 45
-            }
-        )
-    else:  # geral
-        resultado = enviar_para_todos(
-            db, PushSubscription,
-            '🔔 Teste de Notificação',
-            'As notificações estão funcionando corretamente!',
-            'geral'
-        )
-    
-    return jsonify({
-        'success': True,
-        'message': f'Teste de {tipo_teste}: Enviado para {resultado["enviados"]} dispositivos',
-        'resultado': resultado
-    })
-
-
 # ===== API - GERENTE (Dashboard Mobile) =====
 
 @api_bp.route('/gerente/resumo-hoje', methods=['GET'])
@@ -861,7 +671,7 @@ def datas_com_movimento():
         ).distinct().all()
         
         # Converter para lista de strings ISO
-        datas_formatadas = [d.data.isoformat() for d in datas if d.data]
+        datas_formatadas = [d.data for d in datas if d.data]
         
         return jsonify({
             'success': True,
@@ -980,38 +790,6 @@ def resumo_semana():
     })
 
 
-@api_bp.route('/gerente/enviar-resumo-diario', methods=['POST'])
-def enviar_resumo_diario():
-    """Envia notificação com resumo diário para todos"""
-    hoje = datetime.now().date()
-    inicio_dia = datetime.combine(hoje, datetime.min.time())
-    fim_dia = datetime.combine(hoje, datetime.max.time())
-    
-    # Calcular resumo
-    lancamentos = Lancamento.query.filter(
-        Lancamento.data_hora >= inicio_dia,
-        Lancamento.data_hora <= fim_dia
-    ).all()
-    
-    total_vendas = sum(l.valor for l in lancamentos if l.categoria == 'venda' and not l.estorno)
-    total_sangrias = sum(l.valor for l in lancamentos if l.categoria == 'sangria')
-    total_suprimentos = sum(l.valor for l in lancamentos if l.categoria == 'suprimento')
-    
-    resumo = {
-        'total_vendas': total_vendas,
-        'total_sangrias': total_sangrias,
-        'total_suprimentos': total_suprimentos,
-        'lucro_liquido': total_vendas - total_sangrias
-    }
-    
-    resultado = notificar_resumo_diario(db, PushSubscription, resumo)
-    
-    return jsonify({
-        'success': True,
-        'message': f'Resumo enviado para {resultado["enviados"]} dispositivos',
-        'resumo': resumo
-    })
-
 
 # ===== API - RELATÓRIOS PDF =====
 
@@ -1040,6 +818,36 @@ def relatorio_caixa_pdf(id):
         mimetype='application/pdf',
         headers={
             'Content-Disposition': f'attachment; filename={filename}',
+            'Content-Type': 'application/pdf'
+        }
+    )
+
+
+@api_bp.route('/relatorio/caixa/<int:id>/cupom', methods=['GET'])
+def cupom_termico_caixa(id):
+    """Gerar cupom térmico para impressora 80mm (Elgin I9 e similares)"""
+    caixa = Caixa.query.get(id)
+    
+    if not caixa:
+        return jsonify({'success': False, 'message': 'Caixa não encontrado'}), 404
+    
+    lancamentos = Lancamento.query.filter_by(caixa_id=id).order_by(Lancamento.data_hora).all()
+    
+    config = Configuracao.get_config()
+    
+    pdf_buffer = gerar_cupom_termico_caixa(
+        caixa.to_dict(),
+        [l.to_dict() for l in lancamentos],
+        config.nome_loja
+    )
+    
+    filename = f"cupom_caixa_{id}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+    
+    return Response(
+        pdf_buffer.getvalue(),
+        mimetype='application/pdf',
+        headers={
+            'Content-Disposition': f'inline; filename={filename}',
             'Content-Type': 'application/pdf'
         }
     )

@@ -292,20 +292,5 @@
             setInterval(atualizarStatusCaixa, 30000);
         });
     </script>
-
-    <!-- Registrar Service Worker (com proteção para navegadores antigos) -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/static/js/sw.js')
-                    .then(function(registration) {
-                        console.log('Service Worker registrado:', registration);
-                    })
-                    .catch(function(error) {
-                        console.log('Erro ao registrar Service Worker:', error);
-                    });
-            });
-        }
-    </script>
 </body>
 </html>

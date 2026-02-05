@@ -1069,3 +1069,346 @@ def gerar_resumo_diario_pdf(data_resumo, nome_loja='Minha Loja'):
     doc.build(elements)
     buffer.seek(0)
     return buffer
+
+
+def gerar_cupom_termico_caixa(caixa_data, lancamentos, nome_loja='Minha Loja'):
+    """
+    Gera cupom térmico para impressora 80mm (Elgin I9 e similares)
+    Papel: 80mm largura = aproximadamente 72mm área útil
+    """
+    buffer = BytesIO()
+    
+    # Tamanho do papel: 80mm largura (72mm área de impressão)
+    # Altura dinâmica baseada no conteúdo
+    largura_papel = 72 * mm
+    altura_papel = 297 * mm  # Altura máxima, será cortada pela impressora
+    
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=(largura_papel, altura_papel),
+        rightMargin=2*mm,
+        leftMargin=2*mm,
+        topMargin=3*mm,
+        bottomMargin=3*mm
+    )
+    
+    largura_util = largura_papel - 4*mm  # Descontando margens
+    
+    # Estilos otimizados para cupom térmico
+    styles = getSampleStyleSheet()
+    
+    titulo_style = ParagraphStyle(
+        'TituloTermico',
+        parent=styles['Normal'],
+        fontSize=11,
+        alignment=TA_CENTER,
+        spaceAfter=2*mm,
+        fontName='Helvetica-Bold'
+    )
+    
+    subtitulo_style = ParagraphStyle(
+        'SubtituloTermico',
+        parent=styles['Normal'],
+        fontSize=9,
+        alignment=TA_CENTER,
+        spaceAfter=1*mm,
+        fontName='Helvetica-Bold'
+    )
+    
+    normal_style = ParagraphStyle(
+        'NormalTermico',
+        parent=styles['Normal'],
+        fontSize=7,
+        alignment=TA_LEFT,
+        spaceAfter=0.5*mm,
+        fontName='Helvetica'
+    )
+    
+    central_style = ParagraphStyle(
+        'CentralTermico',
+        parent=styles['Normal'],
+        fontSize=7,
+        alignment=TA_CENTER,
+        spaceAfter=0.5*mm,
+        fontName='Helvetica'
+    )
+    
+    valor_style = ParagraphStyle(
+        'ValorTermico',
+        parent=styles['Normal'],
+        fontSize=10,
+        alignment=TA_CENTER,
+        fontName='Helvetica-Bold',
+        spaceAfter=1*mm
+    )
+    
+    elements = []
+    
+    # Linha divisória
+    def linha_divisoria():
+        return Paragraph("-" * 48, central_style)
+    
+    # Cabeçalho
+    elements.append(Paragraph(nome_loja.upper(), titulo_style))
+    elements.append(Paragraph("FECHAMENTO DE CAIXA", subtitulo_style))
+    elements.append(linha_divisoria())
+    
+    # Informações do caixa
+    status_texto = "ABERTO" if caixa_data.get('status') == 'aberto' else "FECHADO"
+    elements.append(Paragraph(f"<b>Caixa #{caixa_data.get('id', '-')}</b> - {status_texto}", central_style))
+    
+    if caixa_data.get('operador'):
+        elements.append(Paragraph(f"Operador: {caixa_data.get('operador')}", central_style))
+    
+    elements.append(Paragraph(f"Abertura: {formatar_data(caixa_data.get('data_abertura'))}", central_style))
+    
+    if caixa_data.get('data_fechamento'):
+        elements.append(Paragraph(f"Fechamento: {formatar_data(caixa_data.get('data_fechamento'))}", central_style))
+    
+    elements.append(linha_divisoria())
+    
+    # Resumo financeiro
+    elements.append(Paragraph("RESUMO", subtitulo_style))
+    
+    troco_inicial = caixa_data.get('troco_inicial', 0)
+    total_entradas = caixa_data.get('total_entradas', 0)
+    total_saidas = caixa_data.get('total_saidas', 0)
+    saldo_atual = caixa_data.get('saldo_atual', 0)
+    
+    resumo_data = [
+        ['Troco Inicial:', formatar_moeda(troco_inicial)],
+        ['(+) Entradas:', formatar_moeda(total_entradas)],
+        ['(-) Saídas:', formatar_moeda(total_saidas)],
+    ]
+    
+    col_width = largura_util / 2
+    tabela_resumo = Table(resumo_data, colWidths=[col_width, col_width])
+    tabela_resumo.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 7),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+        ('TOPPADDING', (0, 0), (-1, -1), 1),
+    ]))
+    elements.append(tabela_resumo)
+    
+    elements.append(Spacer(1, 2*mm))
+    elements.append(Paragraph("SALDO FINAL", subtitulo_style))
+    elements.append(Paragraph(formatar_moeda(saldo_atual), valor_style))
+    
+    # Saldo em dinheiro (usar do caixa_data se disponível, senão calcular)
+    saldo_dinheiro = caixa_data.get('saldo_dinheiro')
+    
+    if saldo_dinheiro is None:
+        # Calcular se não estiver disponível (para retrocompatibilidade)
+        vendas_dinheiro = 0
+        sangrias_total = 0
+        suprimentos_total = 0
+        despesas_dinheiro = 0
+        
+        for lanc in lancamentos:
+            if lanc.get('categoria') == 'venda' and lanc.get('tipo') == 'entrada':
+                if lanc.get('forma_pagamento') == 'Dinheiro':
+                    vendas_dinheiro += lanc.get('valor', 0)
+            elif lanc.get('categoria') == 'sangria' and lanc.get('tipo') == 'saida':
+                sangrias_total += lanc.get('valor', 0)
+            elif lanc.get('categoria') == 'suprimento' and lanc.get('tipo') == 'entrada':
+                suprimentos_total += lanc.get('valor', 0)
+            elif lanc.get('categoria') not in ['venda', 'sangria', 'suprimento'] and lanc.get('tipo') == 'saida':
+                if lanc.get('forma_pagamento') == 'Dinheiro' or not lanc.get('forma_pagamento'):
+                    despesas_dinheiro += lanc.get('valor', 0)
+        
+        saldo_dinheiro = troco_inicial + vendas_dinheiro + suprimentos_total - sangrias_total - despesas_dinheiro
+    
+    elements.append(Spacer(1, 1*mm))
+    elements.append(Paragraph("SALDO EM DINHEIRO", subtitulo_style))
+    elements.append(Paragraph(formatar_moeda(saldo_dinheiro), valor_style))
+    
+    # Diferença (se houver)
+    if caixa_data.get('valor_contado') is not None:
+        elements.append(linha_divisoria())
+        valor_contado = caixa_data.get('valor_contado', 0)
+        diferenca = caixa_data.get('diferenca', 0)
+        
+        elements.append(Paragraph(f"Valor Contado: {formatar_moeda(valor_contado)}", central_style))
+        
+        if abs(diferenca) < 0.01:
+            elements.append(Paragraph("Diferença: CONFERIDO", central_style))
+        elif diferenca > 0:
+            elements.append(Paragraph(f"Diferença: +{formatar_moeda(diferenca)} (SOBRA)", central_style))
+        else:
+            elements.append(Paragraph(f"Diferença: {formatar_moeda(diferenca)} (FALTA)", central_style))
+    
+    elements.append(linha_divisoria())
+    
+    # Vendas por forma de pagamento
+    vendas_por_forma = {}
+    total_vendas = 0
+    for lanc in lancamentos:
+        if lanc.get('categoria') == 'venda' and lanc.get('tipo') == 'entrada':
+            forma = lanc.get('forma_pagamento') or 'N/I'
+            valor = lanc.get('valor', 0)
+            vendas_por_forma[forma] = vendas_por_forma.get(forma, 0) + valor
+            total_vendas += valor
+    
+    if vendas_por_forma:
+        elements.append(Paragraph("VENDAS POR PAGAMENTO", subtitulo_style))
+        
+        formas_data = []
+        for forma in sorted(vendas_por_forma.keys()):
+            formas_data.append([forma, formatar_moeda(vendas_por_forma[forma])])
+        formas_data.append(['TOTAL VENDAS', formatar_moeda(total_vendas)])
+        
+        tabela_formas = Table(formas_data, colWidths=[col_width, col_width])
+        tabela_formas.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -2), 'Helvetica'),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 7),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+            ('TOPPADDING', (0, 0), (-1, -1), 1),
+            ('LINEABOVE', (0, -1), (-1, -1), 0.5, colors.black),
+        ]))
+        elements.append(tabela_formas)
+        elements.append(linha_divisoria())
+    
+    # Contagem de lançamentos
+    qtd_vendas = len([l for l in lancamentos if l.get('categoria') == 'venda'])
+    qtd_sangrias = len([l for l in lancamentos if l.get('categoria') == 'sangria'])
+    qtd_suprimentos = len([l for l in lancamentos if l.get('categoria') == 'suprimento'])
+    
+    elements.append(Paragraph("MOVIMENTO", subtitulo_style))
+    elements.append(Paragraph(f"Vendas: {qtd_vendas} | Sangrias: {qtd_sangrias} | Suprimentos: {qtd_suprimentos}", central_style))
+    
+    elements.append(linha_divisoria())
+    
+    # ===== LANÇAMENTOS DETALHADOS =====
+    if lancamentos:
+        # Separar por categoria
+        vendas = [l for l in lancamentos if l.get('categoria') == 'venda']
+        sangrias = [l for l in lancamentos if l.get('categoria') == 'sangria']
+        suprimentos = [l for l in lancamentos if l.get('categoria') == 'suprimento']
+        outros = [l for l in lancamentos if l.get('categoria') not in ['venda', 'sangria', 'suprimento']]
+        
+        item_style = ParagraphStyle(
+            'ItemTermico',
+            parent=styles['Normal'],
+            fontSize=6,
+            alignment=TA_LEFT,
+            spaceAfter=0.3*mm,
+            fontName='Helvetica'
+        )
+        
+        # VENDAS
+        if vendas:
+            elements.append(Paragraph("VENDAS", subtitulo_style))
+            
+            for lanc in vendas:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '--:--'
+                
+                forma = lanc.get('forma_pagamento') or 'N/I'
+                valor = formatar_moeda(lanc.get('valor', 0))
+                descricao = lanc.get('descricao') or ''
+                
+                # Linha principal: hora, forma e valor
+                elements.append(Paragraph(f"{hora} {forma[:12]:<12} {valor}", item_style))
+                
+                # Descrição em linha separada se existir
+                if descricao:
+                    desc_curta = descricao[:35] + '...' if len(descricao) > 35 else descricao
+                    elements.append(Paragraph(f"  {desc_curta}", item_style))
+            
+            elements.append(linha_divisoria())
+        
+        # SANGRIAS
+        if sangrias:
+            elements.append(Paragraph("SANGRIAS", subtitulo_style))
+            
+            total_sangrias = 0
+            for lanc in sangrias:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '--:--'
+                
+                valor = lanc.get('valor', 0)
+                total_sangrias += valor
+                descricao = lanc.get('descricao') or 'Sangria'
+                desc_curta = descricao[:25] + '...' if len(descricao) > 25 else descricao
+                
+                elements.append(Paragraph(f"{hora} {desc_curta:<25} -{formatar_moeda(valor)}", item_style))
+            
+            elements.append(Paragraph(f"<b>TOTAL SANGRIAS: {formatar_moeda(total_sangrias)}</b>", central_style))
+            elements.append(linha_divisoria())
+        
+        # SUPRIMENTOS
+        if suprimentos:
+            elements.append(Paragraph("SUPRIMENTOS", subtitulo_style))
+            
+            total_suprimentos = 0
+            for lanc in suprimentos:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '--:--'
+                
+                valor = lanc.get('valor', 0)
+                total_suprimentos += valor
+                descricao = lanc.get('descricao') or 'Suprimento'
+                desc_curta = descricao[:25] + '...' if len(descricao) > 25 else descricao
+                
+                elements.append(Paragraph(f"{hora} {desc_curta:<25} +{formatar_moeda(valor)}", item_style))
+            
+            elements.append(Paragraph(f"<b>TOTAL SUPRIMENTOS: {formatar_moeda(total_suprimentos)}</b>", central_style))
+            elements.append(linha_divisoria())
+        
+        # OUTROS
+        if outros:
+            elements.append(Paragraph("OUTROS", subtitulo_style))
+            
+            for lanc in outros:
+                hora = ''
+                try:
+                    dt = datetime.fromisoformat(lanc.get('data_hora', '').replace('Z', '+00:00'))
+                    hora = dt.strftime('%H:%M')
+                except:
+                    hora = '--:--'
+                
+                tipo = '+' if lanc.get('tipo') == 'entrada' else '-'
+                valor = formatar_moeda(lanc.get('valor', 0))
+                categoria = lanc.get('categoria') or 'outros'
+                descricao = lanc.get('descricao') or categoria
+                desc_curta = descricao[:25] + '...' if len(descricao) > 25 else descricao
+                
+                elements.append(Paragraph(f"{hora} {desc_curta:<25} {tipo}{valor}", item_style))
+            
+            elements.append(linha_divisoria())
+    
+    # Observação (se houver)
+    if caixa_data.get('observacao'):
+        elements.append(Paragraph(f"Obs: {caixa_data.get('observacao')}", normal_style))
+        elements.append(linha_divisoria())
+    
+    # Rodapé
+    elements.append(Spacer(1, 2*mm))
+    elements.append(Paragraph(
+        f"Impresso: {datetime.now().strftime('%d/%m/%Y %H:%M')}",
+        central_style
+    ))
+    elements.append(Paragraph("Sistema PDV", central_style))
+    elements.append(Spacer(1, 5*mm))  # Espaço para corte
+    
+    doc.build(elements)
+    buffer.seek(0)
+    return buffer

@@ -14,6 +14,34 @@ var campoAtivo = 'valor';
 var formaSelecionada = '';
 var tipoOutros = 'entrada';
 var resumoFechamento = null;
+var valoresOcultos = localStorage.getItem('valoresOcultos') === 'true';
+
+// ====================================
+// VISIBILIDADE DOS VALORES
+// ====================================
+
+function toggleValores() {
+    valoresOcultos = !valoresOcultos;
+    localStorage.setItem('valoresOcultos', valoresOcultos);
+    aplicarVisibilidadeValores();
+}
+
+function aplicarVisibilidadeValores() {
+    var icone = document.getElementById('iconeOlho');
+    var elementos = document.querySelectorAll('.valor-ocultavel');
+    
+    if (icone) {
+        icone.textContent = valoresOcultos ? '🙈' : '👁️';
+    }
+    
+    for (var i = 0; i < elementos.length; i++) {
+        if (valoresOcultos) {
+            elementos[i].classList.add('valor-oculto');
+        } else {
+            elementos[i].classList.remove('valor-oculto');
+        }
+    }
+}
 
 // ====================================
 // INICIALIZACAO
@@ -52,11 +80,11 @@ function carregarNomeLoja() {
 function carregarFormasPagamento() {
     return API.getConfiguracao()
         .then(function(config) {
-            formasPagamento = config.formas_pagamento || ['Dinheiro', 'PIX', 'Cartao Credito', 'Cartao Debito'];
+            formasPagamento = config.formas_pagamento || ['Dinheiro', 'PIX', 'PIX Online', 'Cartao Debito', 'Cartao Credito', 'Link de Cartao'];
         })
         .catch(function(error) {
             console.error('Erro ao carregar formas de pagamento:', error);
-            formasPagamento = ['Dinheiro', 'PIX', 'Cartao Credito', 'Cartao Debito'];
+            formasPagamento = ['Dinheiro', 'PIX', 'PIX Online', 'Cartao Debito', 'Cartao Credito', 'Link de Cartao'];
         });
 }
 
@@ -96,6 +124,9 @@ function mostrarCaixaAberto() {
             operadorEl.textContent = '-';
         }
     }
+    
+    // Aplicar estado de visibilidade dos valores
+    aplicarVisibilidadeValores();
 }
 
 function mostrarCaixaFechado() {
@@ -412,9 +443,21 @@ function setarValorRapido(valor) {
     atualizarDisplayRecebido();
 }
 
+function focarInputValor() {
+    var input = document.getElementById('inputValor');
+    if (input) {
+        input.style.display = 'block';
+        var display = document.getElementById('displayValor');
+        if (display) display.style.display = 'none';
+        input.focus();
+        campoAtivo = 'valor';
+    }
+}
+
 // Funcao para calcular valores sugeridos baseados no valor da venda
 function calcularValoresSugeridos(valorVenda) {
-    if (valorVenda <= 0) {
+    // Validação de entrada
+    if (typeof valorVenda !== 'number' || isNaN(valorVenda) || valorVenda <= 0) {
         return [10, 20, 50, 100];
     }
     
@@ -459,11 +502,26 @@ function calcularValoresSugeridos(valorVenda) {
     }
     
     // Garantir que temos exatamente 4 sugestoes
-    while (sugestoes.length < 4) {
-        var ultimo = sugestoes[sugestoes.length - 1];
-        var proximo = ultimo + 50;
+    var tentativas = 0;
+    var incremento = 50;
+    while (sugestoes.length < 4 && tentativas < 10) {
+        tentativas++;
+        var ultimo = sugestoes[sugestoes.length - 1] || valorVenda || 0;
+        var proximo = ultimo + incremento;
         if (sugestoes.indexOf(proximo) === -1) {
             sugestoes.push(proximo);
+        } else {
+            incremento += 50; // Aumentar o incremento se o valor já existe
+        }
+    }
+    
+    // Garantir que temos pelo menos 4 valores (fallback de segurança)
+    if (sugestoes.length < 4) {
+        var valoresPadrao = [50, 100, 150, 200];
+        for (var j = 0; j < valoresPadrao.length && sugestoes.length < 4; j++) {
+            if (sugestoes.indexOf(valoresPadrao[j]) === -1) {
+                sugestoes.push(valoresPadrao[j]);
+            }
         }
     }
     
@@ -554,25 +612,34 @@ function modalVenda() {
     for (var i = 0; i < formasPagamento.length; i++) {
         var forma = formasPagamento[i];
         var formaId = forma.replace(/\s/g, '');
-        formasHtml += '<button class="forma-btn" onclick="selecionarForma(\'' + forma + '\')" id="forma-' + formaId + '">' +
-            '<span>' + getIconeForma(forma) + ' ' + forma + '</span>' +
+        var icone = getIconeForma(forma);
+        formasHtml += '<button class="forma-btn" onclick="selecionarForma(\'' + forma + '\')" id="forma-' + formaId + '" title="' + forma + '">' +
+            '<span style="font-size: 1.4rem; margin-bottom: 0.2rem;">' + icone + '</span>' +
+            '<span style="font-size: 0.75rem;">' + forma + '</span>' +
         '</button>';
     }
     
     var conteudo = '<div class="modal-simples">' +
-        '<div class="form-group-pdv">' +
-            '<label>FORMA DE PAGAMENTO</label>' +
+        '<div class="form-group-pdv" style="margin-bottom: 0.75rem;">' +
+            '<label style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.4rem;">FORMA DE PAGAMENTO</label>' +
             '<div class="formas-pagamento-grid">' + formasHtml + '</div>' +
         '</div>' +
         '<div id="areaValorVenda" style="display: none;">' +
-            '<div class="form-group-pdv">' +
-                '<label class="input-valor-label">VALOR DA VENDA</label>' +
-                '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
+            '<div style="background: rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.1);">' +
+                '<label class="input-valor-label" style="margin-bottom: 0.5rem;">VALOR DA VENDA</label>' +
+                '<div class="input-valor" id="displayValor" style="background: transparent; border: none; font-size: 2.2rem; padding: 0; text-align: center; font-family: \'Courier New\', monospace; color: #26a269;" onclick="focarInputValor()">R$ 0,00</div>' +
+                '<input type="text" id="inputValor" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*" style="display: none;">' +
             '</div>' +
             '<div id="areaDinheiro" style="display: none;">' +
-                '<div class="form-group-pdv">' +
-                    '<label class="input-valor-label">VALOR RECEBIDO</label>' +
-                    '<input type="text" id="inputRecebido" class="input-valor" style="font-size: 1.2rem;" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*">' +
+                '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">' +
+                    '<div style="background: rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.1);">' +
+                        '<label class="input-valor-label" style="margin-bottom: 0.3rem;">RECEBIDO</label>' +
+                        '<input type="text" id="inputRecebido" class="input-valor" placeholder="R$ 0,00" inputmode="numeric" pattern="[0-9]*" style="background: transparent; border: none; font-size: 1.4rem;">' +
+                    '</div>' +
+                    '<div id="secaoTroco" style="background: rgba(38, 162, 105, 0.15); border-radius: 12px; padding: 0.75rem; border: 2px solid var(--success-color); display: none;">' +
+                        '<label class="input-valor-label" style="margin-bottom: 0.3rem; color: var(--success-color);">TROCO</label>' +
+                        '<div class="valor-display-numero" id="displayTroco" style="font-size: 1.4rem; color: var(--success-color);">R$ 0,00</div>' +
+                    '</div>' +
                 '</div>' +
                 '<div class="valores-rapidos">' +
                     '<button class="valor-rapido-btn" onclick="setarValorRapido(10)">R$10</button>' +
@@ -580,13 +647,9 @@ function modalVenda() {
                     '<button class="valor-rapido-btn" onclick="setarValorRapido(50)">R$50</button>' +
                     '<button class="valor-rapido-btn" onclick="setarValorRapido(100)">R$100</button>' +
                 '</div>' +
-                '<div class="secao-troco" id="secaoTroco" style="display: none;">' +
-                    '<h4>TROCO</h4>' +
-                    '<div class="valor-display-numero" id="displayTroco" style="font-size: 1.3rem; color: #26a269;">R$ 0,00</div>' +
-                '</div>' +
             '</div>' +
         '</div>' +
-        gerarTecladoInline('💳 CONFIRMAR VENDA', 'confirmarVenda()') +
+        gerarTecladoInline('✅ CONFIRMAR VENDA', 'confirmarVenda()') +
     '</div>';
     
     abrirModalPDV('Nova Venda', conteudo, 'success');
@@ -599,16 +662,20 @@ function modalVenda() {
 
 function getIconeForma(forma) {
     var icones = {
-        'Dinheiro': '$',
-        'PIX': 'P',
-        'Cartao Credito': 'C',
-        'Cartao Debito': 'D',
-        'Credito': 'C',
-        'Debito': 'D',
-        'Transferencia': 'T',
-        'Cheque': 'Q'
+        'Dinheiro': '💵',
+        'PIX': '📱',
+        'PIX Online': '🌐',
+        'Cartao Credito': '💳',
+        'Cartão Crédito': '💳',
+        'Cartao Debito': '🏪',
+        'Cartão Débito': '🏪',
+        'Link de Cartão': '🔗',
+        'Credito': '💳',
+        'Debito': '🏪',
+        'Transferencia': '💸',
+        'Cheque': '📄'
     };
-    return icones[forma] || '$';
+    return icones[forma] || '💵';
 }
 
 function selecionarForma(forma) {

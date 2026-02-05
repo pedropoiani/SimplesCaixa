@@ -341,6 +341,7 @@ function mostrarModalDetalhesCaixa(caixa, lancamentos) {
         var diferencaCor = caixa.diferenca > 0 ? 'var(--success-color)' : (caixa.diferenca < 0 ? 'var(--danger-color)' : 'inherit');
         var diferencaTexto = caixa.diferenca > 0 ? '(Sobra)' : (caixa.diferenca < 0 ? '(Falta)' : '');
         valorContadoHtml = '<div class="info-section">' +
+            '<p><strong>Saldo em Dinheiro (Esperado):</strong> ' + formatarMoeda(caixa.saldo_dinheiro || 0) + '</p>' +
             '<p><strong>Valor Contado:</strong> ' + formatarMoeda(caixa.valor_contado) + '</p>' +
             '<p><strong>Diferenca:</strong> <span style="color: ' + diferencaCor + '">' + formatarMoeda(caixa.diferenca) + ' ' + diferencaTexto + '</span></p>' +
         '</div>';
@@ -372,10 +373,15 @@ function mostrarModalDetalhesCaixa(caixa, lancamentos) {
             '<div class="resumo-label">Saldo</div>' +
             '<div class="resumo-valor saldo-valor">' + formatarMoeda(caixa.saldo_atual) + '</div>' +
         '</div>' +
+        '<div class="resumo-item">' +
+            '<div class="resumo-label">Saldo em Dinheiro</div>' +
+            '<div class="resumo-valor" style="color: #f6d32d;">' + formatarMoeda(caixa.saldo_dinheiro || 0) + '</div>' +
+        '</div>' +
     '</div>' +
     valorContadoHtml +
-    '<div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem;">' +
+    '<div style="display: flex; gap: 1rem; justify-content: center; margin-bottom: 1rem; flex-wrap: wrap;">' +
         '<button class="btn btn-primary" onclick="exportarCaixaPDF(' + caixa.id + ')">Baixar PDF</button>' +
+        '<button class="btn btn-success" onclick="imprimirCupomTermico(' + caixa.id + ')">Imprimir Termica</button>' +
     '</div>' +
     '<h4 class="mt-2">Lancamentos (' + lancamentos.length + ')</h4>' +
     '<div class="lista-lancamentos" style="max-height: 300px; overflow-y: auto;">' + lancamentosHtml + '</div>';
@@ -503,6 +509,12 @@ function exportarRelatorioPDF() {
 
 function exportarCaixaPDF(caixaId) {
     window.open('/api/relatorio/caixa/' + caixaId + '/pdf', '_blank');
+}
+
+function imprimirCupomTermico(caixaId) {
+    // Abre o cupom termmico em nova aba para impressao
+    // Otimizado para impressora termica 80mm (Elgin I9)
+    window.open('/api/relatorio/caixa/' + caixaId + '/cupom', '_blank');
 }
 
 function exportarResumoDiarioPDF(data) {

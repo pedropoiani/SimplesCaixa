@@ -13,7 +13,7 @@ class Configuracao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome_loja = db.Column(db.String(200), nullable=False, default='Minha Loja')
     responsavel = db.Column(db.String(200), nullable=False, default='Responsável')
-    formas_pagamento = db.Column(db.Text, nullable=False, default='Dinheiro,PIX,Cartão Débito,Cartão Crédito')
+    formas_pagamento = db.Column(db.Text, nullable=False, default='Dinheiro,PIX,PIX Online,Cartão Débito,Cartão Crédito,Link de Cartão')
     
     @staticmethod
     def get_config():
@@ -43,8 +43,8 @@ class Caixa(db.Model):
         """Calcula os totais de entradas e saídas do caixa"""
         lancamentos = Lancamento.query.filter_by(caixa_id=self.id).all()
         
-        total_entradas = sum(l.valor for l in lancamentos if l.tipo == 'entrada')
-        total_saidas = sum(l.valor for l in lancamentos if l.tipo == 'saida')
+        total_entradas = sum(l.valor for l in lancamentos if l.tipo == 'entrada' and not l.estorno)
+        total_saidas = sum(l.valor for l in lancamentos if l.tipo == 'saida' and not l.estorno)
         saldo_atual = self.troco_inicial + total_entradas - total_saidas
         
         return {
@@ -53,6 +53,44 @@ class Caixa(db.Model):
             'total_saidas': total_saidas,
             'saldo_atual': saldo_atual
         }
+    
+    def calcular_saldo_dinheiro(self):
+        """Calcula o saldo esperado em dinheiro no caixa"""
+        lancamentos = Lancamento.query.filter_by(caixa_id=self.id).all()
+        
+        # Vendas em dinheiro (excluindo estornados)
+        vendas_dinheiro = sum(
+            l.valor for l in lancamentos 
+            if l.categoria == 'venda' and l.tipo == 'entrada' and l.forma_pagamento == 'Dinheiro'
+            and not l.estorno
+        )
+        
+        # Sangrias (sempre diminuem o dinheiro no caixa, excluindo estornados)
+        sangrias = sum(
+            l.valor for l in lancamentos 
+            if l.categoria == 'sangria' and l.tipo == 'saida'
+            and not l.estorno
+        )
+        
+        # Suprimentos (sempre aumentam o dinheiro no caixa, excluindo estornados)
+        suprimentos = sum(
+            l.valor for l in lancamentos 
+            if l.categoria == 'suprimento' and l.tipo == 'entrada'
+            and not l.estorno
+        )
+        
+        # Outras despesas em dinheiro (excluindo estornados)
+        despesas_dinheiro = sum(
+            l.valor for l in lancamentos 
+            if l.categoria not in ['venda', 'sangria', 'suprimento'] 
+            and l.tipo == 'saida' 
+            and (l.forma_pagamento == 'Dinheiro' or not l.forma_pagamento)
+            and not l.estorno
+        )
+        
+        saldo_dinheiro = self.troco_inicial + vendas_dinheiro + suprimentos - sangrias - despesas_dinheiro
+        
+        return saldo_dinheiro
     
     def to_dict(self):
         totais = self.calcular_totais()
@@ -66,6 +104,7 @@ class Caixa(db.Model):
             'diferenca': self.diferenca,
             'observacao': self.observacao,
             'status': self.status,
+            'saldo_dinheiro': self.calcular_saldo_dinheiro(),
             **totais
         }
 
@@ -117,33 +156,3 @@ class Estorno(db.Model):
             'data_hora': self.data_hora.isoformat() if self.data_hora else None
         }
 
-
-class PushSubscription(db.Model):
-    """Subscrições de Push Notifications"""
-    __tablename__ = 'push_subscription'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    endpoint = db.Column(db.Text, nullable=False, unique=True)
-    p256dh = db.Column(db.Text, nullable=False)
-    auth = db.Column(db.Text, nullable=False)
-    nome_dispositivo = db.Column(db.String(200))
-    ativo = db.Column(db.Boolean, default=True)
-    data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    
-    # Configurações de notificação
-    notificar_sangria = db.Column(db.Boolean, default=True)
-    notificar_abertura = db.Column(db.Boolean, default=True)
-    notificar_fechamento = db.Column(db.Boolean, default=True)
-    notificar_resumo_diario = db.Column(db.Boolean, default=True)
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'nome_dispositivo': self.nome_dispositivo,
-            'ativo': self.ativo,
-            'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
-            'notificar_sangria': self.notificar_sangria,
-            'notificar_abertura': self.notificar_abertura,
-            'notificar_fechamento': self.notificar_fechamento,
-            'notificar_resumo_diario': self.notificar_resumo_diario
-        }

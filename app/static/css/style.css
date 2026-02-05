@@ -644,35 +644,52 @@ body {
 /* Formas de Pagamento Grid */
 .formas-pagamento-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
 }
 
 .forma-btn {
-    padding: 0.65rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
+    padding: 0.6rem 0.4rem;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 65px;
 }
 
 .forma-btn:hover {
     border-color: var(--primary-color);
-    background: rgba(26, 95, 180, 0.2);
+    background: rgba(26, 95, 180, 0.15);
+    transform: translateY(-2px);
 }
 
 .forma-btn.active {
     border-color: var(--primary-color);
     background: var(--primary-color);
+    box-shadow: 0 0 10px rgba(26, 95, 180, 0.5);
 }
 
 .forma-btn span {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.3rem;
     color: white;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+}
+
+.forma-btn span::before {
+    font-size: 1.5rem;
+    line-height: 1;
 }
 
 /* Display de Valor */
@@ -894,24 +911,26 @@ body {
 .valores-rapidos {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.4rem;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .valor-rapido-btn {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
+    padding: 0.7rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border: 1.5px solid var(--warning-color);
+    background: rgba(229, 165, 10, 0.15);
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
-    color: white;
+    transition: all 0.25s;
+    color: var(--warning-color);
 }
 
 .valor-rapido-btn:hover {
-    border-color: var(--primary-color);
-    background: rgba(26, 95, 180, 0.3);
+    border-color: var(--warning-color);
+    background: rgba(229, 165, 10, 0.3);
+    transform: translateY(-2px);
 }
 
 /* Botões de Motivo Rápido */
@@ -2028,4 +2047,49 @@ body {
 
 .text-info {
     color: var(--info-color);
+}
+
+/* ====================================
+   Botão de Ocultar Valores (Olho)
+   ==================================== */
+
+.btn-toggle-valores {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.2s ease;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-toggle-valores:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-toggle-valores:active {
+    transform: scale(0.95);
+}
+
+/* Valores Ocultos */
+.valor-oculto {
+    filter: blur(8px);
+    user-select: none;
+    transition: filter 0.3s ease;
+}
+
+.valor-oculto:hover {
+    filter: blur(6px);
+}
+
+/* Alternativa: mostrar asteriscos em vez de blur */
+.painel-valores.valores-asteriscos .valor-oculto {
+    filter: none;
+    color: transparent;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }

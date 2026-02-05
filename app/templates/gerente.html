@@ -463,78 +463,6 @@
             margin-top: 0.15rem;
         }
         
-        /* Notificações Push */
-        .notif-section {
-            margin: 1rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 1rem;
-        }
-        
-        .notif-section h3 {
-            margin: 0 0 0.75rem 0;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .notif-toggle {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .notif-toggle:last-child {
-            border-bottom: none;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            width: 50px;
-            height: 28px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255,255,255,0.2);
-            border-radius: 28px;
-            transition: 0.3s;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            border-radius: 50%;
-            transition: 0.3s;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: #26a269;
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(22px);
-        }
-        
         /* Botões de Ação */
         .acoes-rapidas {
             display: grid;
@@ -568,11 +496,6 @@
         
         .acao-btn.refresh {
             background: linear-gradient(135deg, #1a5fb4, #0d4a8f);
-            color: white;
-        }
-        
-        .acao-btn.notif {
-            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
             color: white;
         }
         
@@ -694,65 +617,11 @@
         </div>
     </div>
     
-    <!-- Notificações -->
-    <div class="notif-section">
-        <h3>🔔 Notificações Push</h3>
-        <div id="notifStatus">
-            <button class="acao-btn notif" style="width: 100%;" onclick="ativarNotificacoes()">
-                <span>🔔</span>
-                <span>Ativar Notificações</span>
-            </button>
-            <p style="font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem; text-align: center;">
-                Receba alertas de sangrias, abertura e fechamento de caixa
-            </p>
-        </div>
-        <div id="notifConfig" style="display: none;">
-            <div class="notif-toggle">
-                <span>💸 Sangrias</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggleSangria" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="notif-toggle">
-                <span>🔓 Abertura de Caixa</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggleAbertura" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="notif-toggle">
-                <span>🔒 Fechamento de Caixa</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggleFechamento" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <div class="notif-toggle">
-                <span>📊 Resumo Diário</span>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggleResumo" checked>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-            <button class="acao-btn" style="width: 100%; margin-top: 0.75rem; background: rgba(255,255,255,0.1);" onclick="testarNotificacao()">
-                🔔 Testar Notificação
-            </button>
-            <button class="acao-btn" style="width: 100%; margin-top: 0.5rem; background: rgba(255,100,100,0.15); font-size: 0.75rem;" onclick="diagnosticarNotificacoes()">
-                🔧 Diagnosticar Problemas
-            </button>
-        </div>
-    </div>
-    
     <!-- Ações Rápidas -->
     <div class="acoes-rapidas">
         <button class="acao-btn pdf" onclick="baixarPDF()">
             <span>📄</span>
             <span>Baixar PDF</span>
-        </button>
-        <button class="acao-btn refresh" onclick="enviarResumo()">
-            <span>📤</span>
-            <span>Enviar Resumo</span>
         </button>
     </div>
     
@@ -765,8 +634,6 @@
     <script>
         // ===== VARIÁVEIS GLOBAIS =====
         let dadosResumo = null;
-        let vapidPublicKey = null;
-        let swRegistration = null;
         let filtroDataInput = null;
         let datasComMovimento = new Set();
         
@@ -787,8 +654,6 @@
                 atualizarDados(),
                 carregarDatasComMovimento()
             ]);
-
-            verificarSuportePush();
 
             setInterval(atualizarDados, 30000);
         });
@@ -1092,287 +957,10 @@
             return new Date(Number(partes[0]), Number(partes[1]) - 1, Number(dia));
         }
         
-        // ===== FUNÇÕES DE NOTIFICAÇÃO PUSH =====
-        async function verificarSuportePush() {
-            const notifStatusEl = document.getElementById('notifStatus');
-            const notifConfigEl = document.getElementById('notifConfig');
-            
-            // Verificar suporte básico
-            if (!('serviceWorker' in navigator)) {
-                notifStatusEl.innerHTML = 
-                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">⚠️ Service Worker não suportado</div>';
-                console.warn('[Push] Service Worker não suportado');
-                return;
-            }
-            
-            if (!('PushManager' in window)) {
-                notifStatusEl.innerHTML = 
-                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">⚠️ Push API não suportada</div>';
-                console.warn('[Push] PushManager não suportado');
-                return;
-            }
-            
-            if (!('Notification' in window)) {
-                notifStatusEl.innerHTML = 
-                    '<div style="color: rgba(255,255,255,0.5); text-align: center; padding: 1rem;">⚠️ Notificações não suportadas</div>';
-                console.warn('[Push] Notification API não suportada');
-                return;
-            }
-            
-            try {
-                // Buscar chave VAPID primeiro
-                console.log('[Push] Buscando chave VAPID...');
-                const response = await fetch('/api/push/vapid-public-key');
-                const data = await response.json();
-                if (data.success && data.publicKey) {
-                    vapidPublicKey = data.publicKey;
-                    console.log('[Push] Chave VAPID obtida');
-                } else {
-                    throw new Error('Chave VAPID não disponível');
-                }
-                
-                // Registrar service worker e aguardar estar pronto
-                console.log('[Push] Registrando Service Worker...');
-                swRegistration = await navigator.serviceWorker.register('/static/js/sw.js');
-                
-                // Aguardar o SW estar ativo
-                await navigator.serviceWorker.ready;
-                console.log('[Push] Service Worker pronto');
-                
-                // Verificar se já está inscrito
-                const subscription = await swRegistration.pushManager.getSubscription();
-                console.log('[Push] Subscrição existente:', !!subscription);
-
-                if (subscription) {
-                    notifStatusEl.style.display = 'none';
-                    notifConfigEl.style.display = 'block';
-                } else {
-                    // Verificar permissão atual
-                    const permission = Notification.permission;
-                    console.log('[Push] Permissão atual:', permission);
-                    
-                    if (permission === 'denied') {
-                        notifStatusEl.innerHTML = 
-                            '<div style="color: #ff6b6b; text-align: center; padding: 1rem;">🚫 Notificações bloqueadas<br><small>Desbloqueie nas configurações do navegador</small></div>';
-                    }
-                }
-            } catch (error) {
-                console.error('[Push] Erro ao configurar:', error);
-                notifStatusEl.innerHTML = 
-                    '<div style="color: #ff6b6b; text-align: center; padding: 1rem;">⚠️ Erro ao configurar notificações<br><small>' + error.message + '</small></div>';
-            }
-        }
-        
-        async function ativarNotificacoes() {
-            const notifStatusEl = document.getElementById('notifStatus');
-            const notifConfigEl = document.getElementById('notifConfig');
-            
-            try {
-                // Verificar se temos a chave VAPID
-                if (!vapidPublicKey) {
-                    console.log('[Push] Chave VAPID não disponível, tentando obter...');
-                    const response = await fetch('/api/push/vapid-public-key');
-                    const data = await response.json();
-                    if (data.success && data.publicKey) {
-                        vapidPublicKey = data.publicKey;
-                    } else {
-                        throw new Error('Não foi possível obter chave VAPID');
-                    }
-                }
-                
-                // Verificar se SW está registrado
-                if (!swRegistration) {
-                    console.log('[Push] Registrando Service Worker...');
-                    swRegistration = await navigator.serviceWorker.register('/static/js/sw.js');
-                    await navigator.serviceWorker.ready;
-                }
-                
-                console.log('[Push] Solicitando permissão...');
-                const permission = await Notification.requestPermission();
-                console.log('[Push] Permissão:', permission);
-                
-                if (permission !== 'granted') {
-                    if (permission === 'denied') {
-                        notifStatusEl.innerHTML = 
-                            '<div style="color: #ff6b6b; text-align: center; padding: 1rem;">🚫 Notificações bloqueadas<br><small>Desbloqueie nas configurações do navegador</small></div>';
-                    }
-                    mostrarToast('Permissão não concedida', 'error');
-                    return;
-                }
-                
-                // Criar subscrição
-                console.log('[Push] Criando subscrição...');
-                const subscription = await swRegistration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-                });
-                console.log('[Push] Subscrição criada:', subscription.endpoint.substring(0, 50) + '...');
-                
-                // Identificar dispositivo
-                const nomeDispositivo = detectarDispositivo();
-                
-                // Enviar para o servidor
-                const response = await fetch('/api/push/subscribe', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        subscription: subscription.toJSON(),
-                        nome_dispositivo: nomeDispositivo
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    mostrarToast('Notificações ativadas! 🔔', 'success');
-                    notifStatusEl.style.display = 'none';
-                    notifConfigEl.style.display = 'block';
-                    
-                    // Mostrar notificação de teste local
-                    setTimeout(() => {
-                        if (swRegistration.showNotification) {
-                            swRegistration.showNotification('PDV-MF', {
-                                body: 'Notificações configuradas com sucesso!',
-                                icon: '/static/img/icon-192.png',
-                                badge: '/static/img/badge-72.png',
-                                tag: 'setup-success'
-                            });
-                        }
-                    }, 1000);
-                } else {
-                    throw new Error(data.message || 'Erro ao registrar no servidor');
-                }
-            } catch (error) {
-                console.error('[Push] Erro ao ativar:', error);
-                mostrarToast('Erro: ' + error.message, 'error');
-            }
-        }
-        
-        function detectarDispositivo() {
-            const ua = navigator.userAgent;
-            let dispositivo = 'Dispositivo';
-            
-            if (/Android/i.test(ua)) {
-                dispositivo = 'Android';
-                const match = ua.match(/Android[^;]+;\s*([^)]+)/);
-                if (match) dispositivo = match[1].split(' ')[0];
-            } else if (/iPhone|iPad|iPod/i.test(ua)) {
-                dispositivo = 'iPhone';
-            } else if (/Windows/i.test(ua)) {
-                dispositivo = 'Windows';
-            } else if (/Mac/i.test(ua)) {
-                dispositivo = 'Mac';
-            }
-            
-            return dispositivo + ' - Gerente';
-        }
-        
-        async function testarNotificacao() {
-            try {
-                mostrarToast('Enviando notificação de teste...', 'info');
-                
-                const response = await fetch('/api/push/test', { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.success) {
-                    if (data.resultado.enviados > 0) {
-                        mostrarToast(`✅ Enviado para ${data.resultado.enviados} dispositivo(s)`, 'success');
-                    } else {
-                        mostrarToast('⚠️ Nenhum dispositivo inscrito', 'error');
-                    }
-                    
-                    if (data.resultado.expirados > 0) {
-                        console.log('[Push] Subscrições expiradas removidas:', data.resultado.expirados);
-                    }
-                } else {
-                    mostrarToast('Erro: ' + (data.message || 'Falha no envio'), 'error');
-                }
-            } catch (error) {
-                console.error('[Push] Erro no teste:', error);
-                mostrarToast('Erro de conexão ao enviar teste', 'error');
-            }
-        }
-        
-        async function diagnosticarNotificacoes() {
-            let diagnostico = [];
-            
-            // 1. Verificar Service Worker
-            if ('serviceWorker' in navigator) {
-                diagnostico.push('✅ Service Worker suportado');
-                const registration = await navigator.serviceWorker.getRegistration('/static/js/sw.js');
-                if (registration) {
-                    diagnostico.push('✅ SW registrado: ' + (registration.active ? 'ativo' : registration.waiting ? 'aguardando' : 'instalando'));
-                } else {
-                    diagnostico.push('❌ SW não registrado');
-                }
-            } else {
-                diagnostico.push('❌ Service Worker não suportado');
-            }
-            
-            // 2. Verificar PushManager
-            if ('PushManager' in window) {
-                diagnostico.push('✅ Push API suportada');
-            } else {
-                diagnostico.push('❌ Push API não suportada');
-            }
-            
-            // 3. Verificar Notification API
-            if ('Notification' in window) {
-                diagnostico.push('✅ Notification API: ' + Notification.permission);
-                if (Notification.permission === 'denied') {
-                    diagnostico.push('⚠️ Notificações BLOQUEADAS - Vá em Configurações > Site > Notificações');
-                }
-            } else {
-                diagnostico.push('❌ Notification API não suportada');
-            }
-            
-            // 4. Verificar HTTPS
-            if (location.protocol === 'https:' || location.hostname === 'localhost') {
-                diagnostico.push('✅ Conexão segura (HTTPS)');
-            } else {
-                diagnostico.push('❌ Requer HTTPS - Push não funciona em HTTP');
-            }
-            
-            // 5. Verificar subscrição
-            if (swRegistration) {
-                const subscription = await swRegistration.pushManager.getSubscription();
-                if (subscription) {
-                    diagnostico.push('✅ Inscrito para notificações');
-                } else {
-                    diagnostico.push('⚠️ Não inscrito - clique em Ativar');
-                }
-            }
-            
-            // 6. Verificar chave VAPID
-            if (vapidPublicKey) {
-                diagnostico.push('✅ Chave VAPID configurada');
-            } else {
-                diagnostico.push('❌ Chave VAPID não carregada');
-            }
-            
-            // Exibir resultado
-            const mensagem = diagnostico.join('\n');
-            alert('🔧 Diagnóstico de Notificações:\n\n' + mensagem);
-            console.log('[Diagnóstico]', diagnostico);
-        }
-        
         // ===== FUNÇÕES DE PDF =====
         function baixarPDF() {
             const dataSelecionada = filtroDataInput?.value || new Date().toISOString().split('T')[0];
             window.open(`/api/relatorio/resumo-diario/pdf?data=${dataSelecionada}`, '_blank');
-        }
-        
-        async function enviarResumo() {
-            try {
-                const response = await fetch('/api/gerente/enviar-resumo-diario', { method: 'POST' });
-                const data = await response.json();
-                
-                if (data.success) {
-                    mostrarToast('Resumo enviado!', 'success');
-                }
-            } catch (error) {
-                mostrarToast('Erro ao enviar resumo', 'error');
-            }
         }
         
         // ===== UTILIDADES =====
@@ -1397,21 +985,6 @@
             document.body.appendChild(toast);
             
             setTimeout(() => toast.remove(), 3000);
-        }
-        
-        function urlBase64ToUint8Array(base64String) {
-            const padding = '='.repeat((4 - base64String.length % 4) % 4);
-            const base64 = (base64String + padding)
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-            
-            const rawData = window.atob(base64);
-            const outputArray = new Uint8Array(rawData.length);
-            
-            for (let i = 0; i < rawData.length; ++i) {
-                outputArray[i] = rawData.charCodeAt(i);
-            }
-            return outputArray;
         }
     </script>
 </body>

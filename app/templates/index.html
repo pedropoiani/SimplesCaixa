@@ -23,27 +23,30 @@
             <div class="painel-info-loja">
                 <h1 id="nomeLoja">PDV-MF</h1>
                 <span class="operador-info">Operador: <span id="nomeOperador">-</span></span>
+                <button class="btn-toggle-valores" onclick="toggleValores()" title="Mostrar/Ocultar valores">
+                    <span id="iconeOlho">👁️</span>
+                </button>
             </div>
-            <div class="painel-valores">
+            <div class="painel-valores" id="painelValores">
                 <div class="valor-box saldo">
                     <span class="valor-label">SALDO</span>
-                    <span class="valor-numero" id="saldoAtual">R$ 0,00</span>
+                    <span class="valor-numero valor-ocultavel" id="saldoAtual">R$ 0,00</span>
                 </div>
                 <div class="valor-box entradas">
                     <span class="valor-label">ENTRADAS</span>
-                    <span class="valor-numero" id="totalEntradas">R$ 0,00</span>
+                    <span class="valor-numero valor-ocultavel" id="totalEntradas">R$ 0,00</span>
                 </div>
                 <div class="valor-box saidas">
                     <span class="valor-label">SAÍDAS</span>
-                    <span class="valor-numero" id="totalSaidas">R$ 0,00</span>
+                    <span class="valor-numero valor-ocultavel" id="totalSaidas">R$ 0,00</span>
                 </div>
                 <div class="valor-box troco">
                     <span class="valor-label">TROCO INICIAL</span>
-                    <span class="valor-numero" id="trocoInicial">R$ 0,00</span>
+                    <span class="valor-numero valor-ocultavel" id="trocoInicial">R$ 0,00</span>
                 </div>
                 <div class="valor-box previsao">
                     <span class="valor-label">PREVISÃO FECH. CAIXA(DINHEIRO)</span>
-                    <span class="valor-numero" id="previsaoFechamento">R$ 0,00</span>
+                    <span class="valor-numero valor-ocultavel" id="previsaoFechamento">R$ 0,00</span>
                 </div>
             </div>
         </div>
